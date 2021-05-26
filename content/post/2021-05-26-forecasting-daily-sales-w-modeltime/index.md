@@ -12,7 +12,7 @@ tags:
   - time-series
 subtitle: ''
 summary: ''
-authors: [Todd Warczak]
+authors: []
 lastmod: '2021-05-26T13:33:21-04:00'
 featured: no
 image: logo-modeltime.png
