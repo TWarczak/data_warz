@@ -15,10 +15,11 @@ summary: ''
 authors: []
 lastmod: '2021-05-26T13:33:21-04:00'
 featured: no
-image: logo-modeltime.png
+image:
   caption: ''
   focal_point: ''
   preview_only: no
 projects: []
-
 ---
+
+blah blah blah

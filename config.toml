@@ -8,12 +8,12 @@ enableGitInfo = false
 enableRobotsTXT = true
 footnotereturnlinkcontents = "<sup>^</sup>"
 hasCJKLanguage = false
-ignoreFiles = ["\\.ipynb$", ".ipynb_checkpoints$", "\\.Rmd$", "\\.Rmarkdown$", "_cache$"]
+ignoreFiles = ["\\.ipynb$", ".ipynb_checkpoints$", "\\.Rmd$", "\\.Rmarkdown$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$"]
 paginate = 10
 removePathAccents = true
 summaryLength = 30
 timeout = 600000
-title = "Academic"
+title = "data warz"
 
 [imaging]
 anchor = "smart"

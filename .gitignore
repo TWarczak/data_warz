@@ -7,3 +7,8 @@ public/
 jsconfig.json
 node_modules/
 .Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+Thumbs.db
