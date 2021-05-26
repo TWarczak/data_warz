@@ -1,0 +1,156 @@
+abstract_length = 135
+address_format = "en-us"
+appointment_url = "https://calendly.com"
+date_format = "Jan 2, 2006"
+day_night = true
+description = ""
+diagram = false
+directions = "Enter Building 1 and take the stairs to Office 200 on Floor 2"
+docs_section_pager = true
+email = "test@example.org"
+font = ""
+font_size = "L"
+highlight = true
+highlight_languages = "r"
+local_business_type = ""
+math = false
+office_hours = ["Monday 10:00 to 13:00", "Wednesday 09:00 to 10:00"]
+org_name = ""
+phone = "888 888 88 88"
+plugins_js = []
+privacy_pack = false
+reading_time = true
+section_pager = false
+sharing = true
+site_type = "Person"
+theme = "minimal"
+time_format = "3:04 PM"
+twitter = ""
+
+[address]
+city = "Stanford"
+country = "United States"
+country_code = "US"
+postcode = "94305"
+region = "CA"
+street = "450 Serra Mall"
+
+[avatar]
+gravatar = false
+shape = "circle"
+
+[breadcrumb]
+[breadcrumb.page_types]
+book = true
+
+[cms]
+branch = "master"
+local_backend = false
+
+[comments]
+provider = ""
+[comments.commentable]
+book = true
+event = true
+post = true
+project = true
+publication = true
+[comments.commento]
+url = ""
+[comments.disqus]
+shortname = ""
+show_count = true
+
+[[contact_links]]
+icon = "twitter"
+icon_pack = "fab"
+link = "https://twitter.com/Twitter"
+name = "DM Me"
+
+[[contact_links]]
+icon = "skype"
+icon_pack = "fab"
+link = "skype:echo123?call"
+name = "Skype Me"
+
+[[contact_links]]
+icon = "keybase"
+icon_pack = "fab"
+link = "https://keybase.io/"
+name = "Chat on Keybase"
+
+[[contact_links]]
+icon = "comments"
+icon_pack = "fas"
+link = "https://discourse.gohugo.io"
+name = "Discuss on Forum"
+
+[coordinates]
+latitude = "37.4275"
+longitude = "-122.1697"
+
+[copyright_license]
+allow_commercial = false
+allow_derivatives = false
+enable = false
+notice = "This work is licensed under {license}"
+share_alike = true
+
+[edit_page]
+content_dir = ""
+repo_branch = "main"
+repo_url = ""
+[edit_page.editable]
+book = false
+page = false
+post = false
+
+[icon]
+[icon.pack]
+ai = true
+
+[main_menu]
+align = "l"
+enable = true
+highlight_active_link = true
+show_day_night = true
+show_language = false
+show_logo = true
+show_search = true
+
+[map]
+api_key = ""
+provider = ""
+zoom = 15
+
+[marketing]
+baidu_site_verification = ""
+baidu_tongji = ""
+google_analytics = ""
+google_site_verification = ""
+google_tag_manager = ""
+
+[projects]
+post_view = 2
+publication_view = 2
+talk_view = 2
+
+[publications]
+citation_style = "apa"
+date_format = "January 2006"
+
+[search]
+provider = "wowchemy"
+[search.algolia]
+api_key = ""
+app_id = ""
+index_name = ""
+show_logo = false
+
+[show_related]
+book = true
+event = true
+page = false
+post = true
+project = true
+publication = true

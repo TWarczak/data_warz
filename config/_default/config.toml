@@ -1,0 +1,69 @@
+baseurl = "https://toddwarczak.netlify.app/"
+copyright = ""
+defaultContentLanguage = "en"
+defaultContentLanguageInSubdir = false
+disableAliases = true
+enableEmoji = true
+enableGitInfo = false
+enableRobotsTXT = true
+footnotereturnlinkcontents = "<sup>^</sup>"
+hasCJKLanguage = false
+ignoreFiles = ["\\.ipynb$", ".ipynb_checkpoints$", "\\.Rmd$", "\\.Rmarkdown$", "_cache$"]
+paginate = 10
+removePathAccents = true
+summaryLength = 30
+timeout = 600000
+title = "Academic"
+
+[imaging]
+anchor = "smart"
+quality = 75
+resampleFilter = "lanczos"
+
+[markup]
+defaultMarkdownHandler = "goldmark"
+[markup.goldmark]
+[markup.goldmark.renderer]
+unsafe = true
+[markup.highlight]
+codeFences = false
+[markup.tableOfContents]
+endLevel = 3
+startLevel = 2
+
+[module]
+
+[[module.imports]]
+path = "github.com/wowchemy/wowchemy-hugo-modules/wowchemy-cms"
+
+[[module.imports]]
+path = "github.com/wowchemy/wowchemy-hugo-modules/wowchemy"
+
+[outputs]
+home = ["HTML", "RSS", "JSON", "WebAppManifest", "headers", "redirects"]
+section = ["HTML", "RSS"]
+
+[permalinks]
+categories = "/category/:slug/"
+event = "/talk/:slug/"
+publication_types = "/publication-type/:slug/"
+tags = "/tag/:slug/"
+
+[related]
+includeNewer = true
+threshold = 80
+toLower = true
+
+[[related.indices]]
+name = "tags"
+weight = 100
+
+[[related.indices]]
+name = "categories"
+weight = 70
+
+[taxonomies]
+author = "authors"
+category = "categories"
+publication_type = "publication_types"
+tag = "tags"
