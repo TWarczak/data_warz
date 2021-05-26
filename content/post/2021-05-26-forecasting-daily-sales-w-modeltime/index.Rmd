@@ -174,7 +174,7 @@ ggplot(q, aes(reorder_within(state, orders, region, sep = ""), orders, fill = re
              vjust    = 0.4)
 
 ```
-```{r Sales by State/Region, fig.width = 18.5, fig.height = 12.5, cache=TRUE, class.source = 'fold-hide'}
+```{r Sales by State/Region, fig.width = 18.5, fig.height = 12.5, cache=TRUE}
 
 ggplot(q, aes(reorder_within(state, sales, region, sep = ""), sales, fill = region)) +
    geom_col(show.legend = FALSE, alpha = 0.9) +
@@ -201,7 +201,7 @@ ggplot(q, aes(reorder_within(state, sales, region, sep = ""), sales, fill = regi
 Looks like the do business throughout the US, with the most business coming from California. They probably do most of their business from online shopping, as these total sale numbers aren't high enough for multiple warehouses spread across the country.  
 
 Lets also look at number of `orders` and `sales` grouped by `customer_name`, `category`, and `segment`. Any outliers?
-```{r, warning=FALSE, message=FALSE, cache=TRUE, class.source = 'fold-hide'}
+```{r, cache=TRUE}
 # Want to identify any outlier customers, and see if any category/segment of their business dominates
 x <- data_clean_tbl %>%
       group_by(customer_name, category, segment) %>%
@@ -235,7 +235,7 @@ seth_vernon <- data.frame(category = factor("Furniture", levels = c("Furniture",
 
 ```
 
-```{r Orders & Sales in log($) per Customer by Category/Segment, fig.width = 16, fig.height = 10, cache=TRUE, class.source = 'fold-hide'}
+```{r Orders & Sales in log($) per Customer by Category/Segment, fig.width = 16, fig.height = 10, cache=TRUE}
 
 ggplot(x, aes(log(sales), orders, color = category)) +
    geom_jitter(aes(shape = segment),
@@ -282,7 +282,7 @@ sales_daily_tbl <- data_clean_tbl %>%
 ```
 
 Let's look at the daily total sales for this company over the time-series.  
-```{r Daily Total Sales, fig.width = 16, fig.height = 6, class.source = 'fold-hide'}
+```{r Daily Total Sales, fig.width = 16, fig.height = 6}
 sales_daily_tbl %>% 
    plot_time_series(.date_var     = order_date,
                     .value        = sales,
@@ -329,7 +329,7 @@ std_sd_sales <- 2.86059320652223
 ```
 
 Let's look at our new padded & transformed time-series.
-```{r Daily Total Sales (Padded & Transformed), fig.width = 16, fig.height = 6, class.source = 'fold-hide'}
+```{r Daily Total Sales (Padded & Transformed), fig.width = 16, fig.height = 6}
 sales_daily_pad_trans_tbl %>% 
    plot_time_series(order_date,
                     sales_trans,
@@ -345,7 +345,7 @@ We might want to add lags, rolling lags, and/or fourier-series features that cou
 
 Let's look at ACF/PACF plots to see if any periods look usable.        
 ###  ACF/PACF
-```{r Lag Diagnostics, fig.width = 16, fig.height = 8, class.source = 'fold-hide'}
+```{r Lag Diagnostics, fig.width = 16, fig.height = 8}
 
 lag_labels <- data.frame(name  = c("ACF","ACF","ACF","ACF","ACF","PACF","PACF","PACF","PACF"),
                          label = c('7','14','21','28','357','7','14','21','28'))
@@ -403,7 +403,7 @@ glimpse(full_data_prepared_tbl)
 ```
 
 The time-series now includes lag, rolling_lag and fourier-series data in future forecast dates. If these features help model accuracy on the training/testing sets, we can assume they'll help the models forecast future sales. They may or may not help though. Gotta experiment. Let's look at the lag and rolling lags data. 
-```{r Lagged Rolling Averages, fig.width = 16, fig.height = 6, warning=FALSE, message=FALSE, class.source = 'fold-hide'}
+```{r Lagged Rolling Averages, fig.width = 16, fig.height = 6}
 full_data_prepared_tbl %>%
    pivot_longer(c(sales_trans,
                   lag_sales_trans_lag84,
@@ -417,7 +417,7 @@ full_data_prepared_tbl %>%
 
 Notice each of the first 84 days lacks at least some of the lag/rolling lag features. We can't use these days in our testing/training splits. That's the downside. We probably could pad those dates somehow, but I won't try here. 
 ```{r, include=FALSE}
-skimr::skim(full_data_prepared_tbl)
+skimr::skim_without_charts(full_data_prepared_tbl)
 ```
 
 The `full_data_prepared_tbl` has 1542 rows (1458 original days + 84 future days). We need to separate rows for future days so we can split the original data into training/testing sets. Filter using days lacking `sales_trans` values.  
@@ -429,7 +429,7 @@ We can use `skim()` from `{skimr}` to show us a summary of our data.
 forecast_tbl <- full_data_prepared_tbl %>% 
                 filter(is.na(sales_trans))
 
-skimr::skim(forecast_tbl)
+skimr::skim_without_charts(forecast_tbl)
 ```
 
 The `forecast_tbl` has 84 rows, 37 columns for 84 future dates starting 2018-12-31 and ending 2019-03-24. Rows are only missing `sales_trans` data. Good to go.  
@@ -443,7 +443,7 @@ data_prepared_tbl <- full_data_prepared_tbl %>%
                      filter(!is.na(sales_trans)) %>% 
                      drop_na()
 
-skimr::skim(data_prepared_tbl)
+skimr::skim_without_charts(data_prepared_tbl)
 ```
 
 1374 rows, 37 columns, no missing data. Dates now range from 2015-03-28 to 2018-12-30.  Good to go.  
@@ -533,7 +533,7 @@ Ok, lets build!
 
 ###  ARIMA 
 *Only model w/out a workflow*
-```{r, results='hide', message=FALSE, cache=TRUE}
+```{r, results='hide', cache=TRUE}
 set.seed(321)
 model_fit_arima <- arima_reg() %>%
    set_engine('auto_arima') %>%
@@ -542,7 +542,7 @@ model_fit_arima <- arima_reg() %>%
 
 ###  ARIMA BOOST
 Keep `order_date` feature
-```{r, results='hide', warning=FALSE, message=FALSE, cache=TRUE}
+```{r, results='hide', cache=TRUE}
 
 wflw_fit_arimaboost <- workflow() %>%
    add_model(spec = arima_boost() %>% set_engine('auto_arima_xgboost')) %>%
@@ -557,7 +557,7 @@ wflw_fit_arimaboost_no_f <- workflow() %>%
 
 ###  PROPHET
 Keep `order_date` feature
-```{r, results='hide', warning=FALSE, message=FALSE, cache=TRUE}
+```{r, results='hide', cache=TRUE}
 
 wflw_fit_prophet <- workflow() %>%
    add_model(spec = prophet_reg() %>% set_engine('prophet')) %>%
@@ -655,7 +655,7 @@ wflw_fit_nnet_no_f <- workflow() %>%
 
 ###  NNETAR
 Keep `order_date` feature
-```{r, results='hide', warning=FALSE, message=FALSE, cache=TRUE}
+```{r, results='hide', cache=TRUE}
 set.seed(321)
 wflw_fit_nnetar <- workflow() %>%
    add_model(nnetar_reg() %>% set_engine('nnetar')) %>%
@@ -777,7 +777,7 @@ submodels_tbl_2 <- modeltime_table(wflw_fit_svm_no_f,
 ```
 
 **Visualize Best 6 Models Fit on Testing Data**
-```{r Models fit on testing(splits), fig.width = 16, fig.height = 6, message=FALSE}
+```{r Models fit on testing(splits), fig.width = 16, fig.height = 6}
 calibration_tbl <- submodels_tbl_2 %>% modeltime_calibrate(testing(splits)) 
 
 calibration_tbl %>%
@@ -819,7 +819,7 @@ resamples_kfold %>%
 ```
 
 **Time-Series CV**
-```{r, message=FALSE}
+```{r}
 set.seed(321)
 resamples_tscv <- time_series_cv(data        = training(splits) %>% drop_na(),
                                  cumulative  = TRUE,
@@ -936,7 +936,7 @@ tune_results_prophet_boost_2 <- wflw_spec_prophet_boost_tune %>%
              grid       = grid_spec_prophet_boost_2, 
              control    = control_grid(verbose = TRUE))
 ```
-```{r, fig.width = 20, fig.height = 6, include=FALSE, class.source = 'fold-hide'}
+```{r, fig.width = 20, fig.height = 6, include=FALSE}
 tune_results_prophet_boost_2 %>% show_best('rmse', n = Inf)
 
  tune_results_prophet_boost_2 %>% 
@@ -983,7 +983,7 @@ grid_spec_svm_1 <- grid_latin_hypercube(parameters(model_spec_svm_tune),
 ```
 
 **Tuning Round 1**
-```{r, results='hide', message=FALSE, warning=FALSE, cache=TRUE}
+```{r, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_svm <- wflw_spec_svm_tune %>%
                     tune_grid(resamples  = resamples_kfold,
@@ -997,7 +997,7 @@ tune_results_svm %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 1**
-```{r, fig.width = 8, fig.height = 6, warning=FALSE, message=FALSE, results='hide'}
+```{r, fig.width = 8, fig.height = 6, results='hide'}
  tune_results_svm %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1017,7 +1017,7 @@ grid_spec_svm_2 <- grid_latin_hypercube(cost(range = c(3.2,3.5),
 ```
 
 **Tuning Round 2 **
-```{r, results='hide', message=FALSE, warning=FALSE, cache=TRUE}
+```{r, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_svm_2 <- wflw_spec_svm_tune %>%
                       tune_grid(resamples  = resamples_kfold,
@@ -1031,7 +1031,7 @@ tune_results_svm_2 %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 2**
-```{r, fig.width = 8, fig.height = 6, warning=FALSE, message=FALSE, results='hide'}
+```{r, fig.width = 8, fig.height = 6, results='hide'}
  tune_results_svm_2 %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1086,7 +1086,7 @@ tune_results_svm_f <- wflw_spec_svm_tune_f %>%
 
 tune_results_svm_f %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 8, fig.height = 6, warning=FALSE, message=FALSE, results='hide', include=FALSE}
+```{r, fig.width = 8, fig.height = 6, include=FALSE}
 # Results Plot
 
 tune_results_svm_f %>% 
@@ -1171,7 +1171,7 @@ tune_results_rf <- wflw_spec_rf_tune %>%
 
 tune_results_rf %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 8, fig.height = 6, warning=FALSE, message=FALSE, results='hide', include=FALSE}
+```{r, fig.width = 8, fig.height = 6, include=FALSE}
 # Results Plot
 
  tune_results_rf %>% 
@@ -1239,7 +1239,7 @@ grid_spec_nnetar_1 <- grid_latin_hypercube(parameters(model_spec_nnetar_tune),
                                            size = 20)
 
 ```
-```{r, message=FALSE, warning=FALSE, results='hide', cache=TRUE, include=FALSE}
+```{r, cache=TRUE, include=FALSE}
 set.seed(321)
 tune_results_nnetar <- wflw_spec_nnetar_tune %>% 
                        tune_grid(resamples = resamples_tscv,
@@ -1249,7 +1249,7 @@ tune_results_nnetar <- wflw_spec_nnetar_tune %>%
 ```{r, include=FALSE}
 tune_results_nnetar %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 14, fig.height = 6, warning=FALSE, message=FALSE, results='hide', include=FALSE}
+```{r, fig.width = 14, fig.height = 6, include=FALSE}
  tune_results_nnetar %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1265,7 +1265,7 @@ grid_spec_nnetar_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
                                                    trans = scales::log10_trans()),
                                            size = 10)
 ```
-```{r, message=FALSE, warning=FALSE, results='hide', cache=TRUE, include=FALSE}
+```{r, cache=TRUE, include=FALSE}
 set.seed(321)
 tune_results_nnetar_2 <- wflw_spec_nnetar_tune %>% 
                          tune_grid(resamples = resamples_tscv,
@@ -1324,7 +1324,7 @@ grid_spec_nnetar_f_1 <- grid_latin_hypercube(parameters(model_spec_nnetar_tune),
 ```
 
 **Tuning Round 1 **
-```{r, message=FALSE, warning=FALSE, results='hide', cache=TRUE}
+```{r, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_nnetar_f <- wflw_spec_nnetar_tune_f %>% 
                          tune_grid(resamples = resamples_tscv,
@@ -1338,7 +1338,7 @@ tune_results_nnetar_f %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 1 **
-```{r, fig.width = 14, fig.height = 6, warning=FALSE, message=FALSE, results='hide'}
+```{r, fig.width = 14, fig.height = 6}
  tune_results_nnetar_f %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1420,7 +1420,7 @@ calibration_tuned_tbl %>% modeltime_accuracy() %>% arrange(rmse)
 ```
 
 **Visualize Fit on Test Data**
-```{r Tuned Models fit on testing(splits), fig.height=6, fig.width=16, message=FALSE, class.source = 'fold-hide'}
+```{r Tuned Models fit on testing(splits), fig.height=6, fig.width=16}
 calibration_tuned_tbl %>% 
    modeltime_forecast(new_data    = testing(splits),
                       actual_data = filter_by_time(data_prepared_tbl, .start_date = "2018-09"),
@@ -1446,7 +1446,7 @@ refit_tbl <- calibration_tuned_tbl %>%
 After refitting, we can un-transform the data using those transformation parameters we saved way up top and visualize our models on a true y-axis of sales.
 
 **Visualizing Sales Forecast with 6 Tuned-Models Zoomed In**
-```{r, fig.height=8, fig.width=16, message=FALSE}
+```{r, fig.height=8, fig.width=16}
 refit_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl,
@@ -1470,7 +1470,7 @@ refit_tbl %>%
 ```
 
 **Visualizing Sales Forecast with 6 Tuned-Models Zoomed Out**
-```{r, fig.height=8, fig.width=16, message=FALSE, class.source = 'fold-hide'}
+```{r, fig.height=8, fig.width=16}
 refit_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl,
@@ -1519,7 +1519,7 @@ refit_weight_tbl <- weight_ensemble_tbl %>%
 ```
 
 **Visualizing Sales Forecast with Ensemble Model**
-```{r Ensemble Forecast, fig.height=8, fig.width=16, message=FALSE, class.source = 'fold-hide'}
+```{r Ensemble Forecast, fig.height=8, fig.width=16}
 refit_weight_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl)  %>%  
