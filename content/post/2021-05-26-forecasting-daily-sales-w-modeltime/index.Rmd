@@ -15,7 +15,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.showtext = TRUE, retina = 2,)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.showtext = TRUE, retina = 2)
 ```
 
 ```{r, include=FALSE}

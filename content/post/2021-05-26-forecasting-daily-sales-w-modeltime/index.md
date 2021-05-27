@@ -13,7 +13,6 @@ editor_options:
   chunk_output_type:
 ---
 
-![](/img/modeltime/logo-modeltime.png)
 -   [🥅 Project Goal](#goal)
 -   [🗂 Obtain Data](#data)
 -   [🛁 Clean Data](#clean)
