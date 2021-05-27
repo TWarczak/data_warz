@@ -13,11 +13,12 @@ paginate = 10
 removePathAccents = true
 summaryLength = 30
 timeout = 600000
-title = "data warz"
+title = "Todd Warczak"
+theme = "hugo-academic"
 
 [imaging]
 anchor = "smart"
-quality = 75
+quality = 90
 resampleFilter = "lanczos"
 
 [markup]
@@ -26,7 +27,7 @@ defaultMarkdownHandler = "goldmark"
 [markup.goldmark.renderer]
 unsafe = true
 [markup.highlight]
-codeFences = true
+codeFences = false
 
 [markup.tableOfContents]
 endLevel = 3

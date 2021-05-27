@@ -23,7 +23,7 @@ reading_time = true
 section_pager = false
 sharing = true
 site_type = "Person"
-theme = "my_theme"
+theme = "minimal"
 time_format = "3:04 PM"
 twitter = ""
 
