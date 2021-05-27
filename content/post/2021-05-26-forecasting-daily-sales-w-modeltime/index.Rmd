@@ -424,7 +424,7 @@ The `full_data_prepared_tbl` has 1542 rows (1458 original days + 84 future days)
 
 ###  Forecast Data
 
-We can use `skim()` from `{skimr}` to show us a summary of our data.
+We can use `{skimr}` to show us a summary of our data.
 ```{r}
 forecast_tbl <- full_data_prepared_tbl %>% 
                 filter(is.na(sales_trans))
@@ -1016,7 +1016,7 @@ grid_spec_svm_2 <- grid_latin_hypercube(cost(range = c(3.2,3.5),
                                         size = 20)
 ```
 
-**Tuning Round 2 **
+**Tuning Round 2**
 ```{r, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_svm_2 <- wflw_spec_svm_tune %>%
@@ -1308,7 +1308,7 @@ model_spec_nnetar_tune <- nnetar_reg(mode            = 'regression',
                           set_engine('nnetar')
 ```
 
-**Workflow **
+**Workflow**
 
 *Keep `order_date` feature*
 ```{r}
@@ -1317,13 +1317,13 @@ wflw_spec_nnetar_tune_f <- workflow() %>%
                            add_recipe(recipe_spec)
 ```
 
-**Tuning Grid 1 **
+**Tuning Grid 1**
 ```{r}
 grid_spec_nnetar_f_1 <- grid_latin_hypercube(parameters(model_spec_nnetar_tune),
                                              size = 20)
 ```
 
-**Tuning Round 1 **
+**Tuning Round 1**
 ```{r, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_nnetar_f <- wflw_spec_nnetar_tune_f %>% 
@@ -1332,12 +1332,12 @@ tune_results_nnetar_f <- wflw_spec_nnetar_tune_f %>%
                                    control   = control_grid(verbose = TRUE))
 ```
 
-**Results Table 1 **
+**Results Table 1**
 ```{r}
 tune_results_nnetar_f %>% show_best('rmse', n = 10)
 ```
 
-**Results Plot 1 **
+**Results Plot 1**
 ```{r, fig.width = 14, fig.height = 6}
  tune_results_nnetar_f %>% 
      autoplot +
@@ -1346,7 +1346,7 @@ tune_results_nnetar_f %>% show_best('rmse', n = 10)
      theme_dark_grey() 
 ```
 
-**Tuning Grid 2 **
+**Tuning Grid 2**
 ```{r }
 set.seed(321)
 grid_spec_nnetar_f_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
@@ -1357,7 +1357,7 @@ grid_spec_nnetar_f_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
                                              size = 10)
 ```
 
-**Tuning Round 2 **
+**Tuning Round 2**
 ```{r, cache=TRUE}
 set.seed(321)
 tune_results_nnetar_f_2 <- wflw_spec_nnetar_tune_f %>% 
@@ -1366,12 +1366,12 @@ tune_results_nnetar_f_2 <- wflw_spec_nnetar_tune_f %>%
                                      control   = control_grid(verbose = TRUE))
 ```
 
-**Results Table 2 **
+**Results Table 2**
 ```{r}
 tune_results_nnetar_f_2 %>% show_best('rmse', n = 10)
 ```
 
-**Results Plot 2 **
+**Results Plot 2**
 ```{r, fig.width = 8, fig.height = 6}
 tune_results_nnetar_f_2 %>% 
      autoplot +
@@ -1435,7 +1435,7 @@ calibration_tuned_tbl %>%
    scale_color_todd_dark_bright()
 ```
 
-The hyperparameter tuning helped the performance of some models, at least regarding fit on the testing data. I could do some more work tuning, but lets move forward and forecast future sales with these tuned models. We need to refit the models on the entire dataset now, not only on training or testing data.  Once refit, we can forecast daily sales for the next 84 days. 
+The hyperparameter tuning helped the performance of some models, at least regarding fit on the testing data. I could do some more work tuning, but lets move forward and forecast future sales with these tuned models. We need to refit the models on the entire dataset now, not just the training or testing data.  Once refit, we can forecast daily sales for the next 84 days. 
 
 **Refit on All Data**
 ```{r, cache=TRUE}
@@ -1507,7 +1507,7 @@ weight_ensemble_tbl <- calibration_tuned_tbl %>%
                        modeltime_table()
 ```
 
-**Calibrate Accuracy of Weighted Ensemble Model **
+**Calibrate Accuracy of Weighted Ensemble Model**
 ```{r, cache=TRUE}
 weight_ensemble_tbl %>% modeltime_accuracy(testing(splits))
 ```
