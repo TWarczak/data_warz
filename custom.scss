@@ -1,0 +1,44 @@
+/* removing box shadows */
+
+.navbar {
+  height: 70px;
+  background: $sta-menu-primary;
+/* this is the part that takes out the shadow & the only edit */
+  box-shadow: none;
+  font-size: 18px;
+  font-weight: 900 !important;
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 1030;
+  padding: 0 1rem;
+}
+
+ .card-simple {
+  background: #fff;
+/* this is the part that takes out the shadow */
+  box-shadow: none;
+  border: 1px solid rgba(0,0,0,.09);
+  border-radius: 3px;
+  margin-top: 20px;
+  padding: 15px 20px 15px 20px;
+}
+
+.card {
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: #fff;
+/* this is the part that takes out the shadow */
+  box-shadow: none;
+  transition: all 0.2s ease-out;
+}
+
+/* adjusting post font size & page width */
+.article-container {
+  max-width: 1050px;
+  padding: 0 10px 0 10px;
+  margin: 0 auto 0 auto;
+  font-size: 16px;
+}
