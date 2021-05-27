@@ -14,7 +14,7 @@ removePathAccents = true
 summaryLength = 30
 timeout = 600000
 title = "Todd Warczak"
-theme = "hugo-academic"
+theme = "starter-hugo-academic"
 
 [imaging]
 anchor = "smart"
