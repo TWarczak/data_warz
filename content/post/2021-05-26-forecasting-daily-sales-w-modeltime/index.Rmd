@@ -15,7 +15,7 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.showtext = TRUE, retina = 2)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.showtext = TRUE, retina = 2,)
 ```
 
 ```{r, include=FALSE}
@@ -81,7 +81,7 @@ scale_color_todd_dark_bright <- function(...){
                                                        "#d4f1f4","#d3ae7c","#307ca1","#ffdf00","#f2f2f2")), ...)
 }
 ```
-![](/Users/toddwarczak/Documents/R/data_warz/content/post/2021-05-20-forecasting-daily-sales-w-modeltime/logo-modeltime.png)
+![](/Users/toddwarczak/Documents/R/data_warz/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/logo-modeltime.png)
 
 
 * [🥅 Project Goal](#goal)

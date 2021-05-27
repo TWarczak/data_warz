@@ -26,7 +26,8 @@ defaultMarkdownHandler = "goldmark"
 [markup.goldmark.renderer]
 unsafe = true
 [markup.highlight]
-codeFences = false
+codeFences = true
+
 [markup.tableOfContents]
 endLevel = 3
 startLevel = 2
