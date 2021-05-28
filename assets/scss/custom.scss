@@ -93,7 +93,7 @@ a {
 
 .navbar {
   font-weight: 700;                         // weight for navbar text
-  box-shadow: 0 0 0.5px 0.5px $spc-primary-dark;
+  box-shadow: none;
   text-transform: uppercase;
   letter-spacing: .08em;                    // horizontal padding
   padding: 0 2em;
@@ -263,7 +263,7 @@ background: white;                        // text background for experience card
 }
 .card-simple {
   background: white;                        // text background for post cards
-  box-shadow: 0 1px 1px $spc-bkg-dark-std;      // card shadow (values: top bottom sides)
+  box-shadow: none;      // card shadow (values: top bottom sides)
   border: 1px solid $spc-01dp;                  // card border
 }
 
@@ -387,7 +387,7 @@ img {
 	margin-bottom: 1.5rem;
 	overflow: hidden;
 	background: #fff;
-	box-shadow: 0 2px 4px 0 rgba(0,0,0,.2);
+	box-shadow: none;
 }
 iframe {
 	border: 0;
@@ -477,7 +477,7 @@ body.dark {
 .dark .navbar {
   font-weight: 700;                              // weight for navbar text
   background: mix($spc-bkg-light-std, $spc-bkg-dark-std, 95);    // background for entire navbar
-  box-shadow: 0 0.125rem 0.25rem 0 rgba(255, 255, 255, .11);
+  box-shadow: none;
   text-transform: uppercase;
   letter-spacing: .08em;                         // horizontal padding
   padding: 0 2rem;
