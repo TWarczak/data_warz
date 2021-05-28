@@ -6,14 +6,14 @@
 //  change all rgb(152, 166, 173) --> rgba(255, 255, 255, 0.87) -- headings
 //  change all rgb(68, 71, 90)    --> mix(#1f222a, white, 98%)
 //  change all rgb(40, 42, 54)    --> #1f222a -- page background
-//  change all rgb(139, 233, 253) --> #fff14d -- dark mode inline code text
+//  change all rgb(139, 233, 253) --> #1f222a -- dark mode inline code text
 
 // COLOR VARIABLES
 // primary and secondary colors and variants
 $spc-primary:            #122140; // primary color
 $spc-primary-light:      #3d486b; // primary color, lighter variant
 $spc-primary-dark:       #00001b; // primary color, darker variant
-$spc-secondary:          #e5be00; // secondary color
+$spc-secondary:          #fff3b0; // secondary color
 $spc-secondary-light:    #fff14d; // secondary color, lighter variant
 $spc-secondary-dark:     #ae8f00; // secondary color, darker variant
 
@@ -75,7 +75,7 @@ a {
   &:focus,
   &:hover,
   &:active {
-    color: $spc-secondary-dark !important;      // link color when hovering
+    color: $spc-secondary-light !important;      // link color when hovering
   }
 }
 
@@ -86,7 +86,24 @@ a {
   border-radius: 2px;
   border-color: $spc-primary;
 }
-
+.article-container {
+  max-width: 1050px;
+  padding: 0 20px 0 20px;
+  margin: 0 auto 0 auto;
+}
+.featured-image {
+  position: absolute;
+  left: 0.7rem;
+  top: 0.6rem;
+  overflow-x: hidden;
+}
+.featured-image-wrapper {
+  position: relative;
+  padding-left: 0;
+  /* Override container padding. */
+  padding-right: 0;
+  /* Override container padding. */
+}
 // ************************************************
 // NAVIGATION BAR: _nav.scss
 // ************************************************
@@ -484,7 +501,7 @@ body.dark {
   .navbar-nav {
     display: flex;
     .nav-link {
-      color: rgba($spc-bkg-dark-std, .85) !important;
+      color: rgba($spc-bkg-dark-std, .90) !important;
       &:focus,
       &:hover,
       &:active {
@@ -554,7 +571,7 @@ body.dark {
 
 .dark {
   code {
-    color: mix($spc-secondary-dark, white, 70);   // inline and code block text
+    color: #9bc4cb; //mix($spc-secondary-dark, white, 70);   // inline and code block text
     background: $spc-04dp;
     font-size: 0.9em;
   }
