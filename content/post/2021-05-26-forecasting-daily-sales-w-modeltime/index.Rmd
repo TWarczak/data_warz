@@ -3,21 +3,32 @@ title: Forecasting Daily Sales w/ {modeltime}
 subtitle: Time-Series Modeling in the {tidymodels} Universe
 author: Todd Warczak
 date: '2021-05-20'
-categories: [R]
-description: In my introductory blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist.
-tags: ["tidymodels", "modeltime", "time-series", "tidyverse", "R", "rstats"]
-output:
-   html_document:
-      code_folding: show
-editor_options:
-   chunk_output_type: inline
+slug: modeltime
+categories:
+   - rstats
+   - tidymodels
+   - modeltime
+   - R
+tags:
+   - rstats
+   - tidymodels
+   - modeltime
+   - time-series
+   - tidyverse
+   - R
+summary: "In my introductory blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist.""
+featured: "featured-hex-modeltime.jpeg"
+image:
+   caption: ''
+   focal_point: ''
+   preview_only: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.showtext = TRUE, retina = 2)
-```
+library(knitr)
+knitr::opts_chunk$set(cache = TRUE, echo = TRUE, warning = FALSE, message = FALSE, 
+                      dpi = 300, cache.lazy = FALSE, tidy = "styler")
 
-```{r, include=FALSE}
 library(tidyverse)
 library(tidymodels)
 library(modeltime)
@@ -25,9 +36,8 @@ library(modeltime.ensemble)
 library(modeltime.resample)
 library(timetk)
 library(lubridate)
-```
+library(scales)
 
-```{r, include=FALSE}
 theme_dark_grey <- function(base_size=14, base_family="sans") {
    library(grid)
    library(ggthemes)
@@ -70,8 +80,8 @@ scale_fill_todd_dark <- function(...){
 
 scale_color_todd_dark_subtle <- function(...){
    library(scales)
-   discrete_scale("color","todd",manual_pal(values = c("#decbe4","#fed9a6","#b3cde3","#ccebc5","#fbb4ae",
-                                                       "#ffffcc","#e5d8bd","#fddaec","#f2f2f2")), ...)
+   discrete_scale("color","todd",manual_pal(values=c("#decbe4","#fed9a6","#b3cde3","#ccebc5","#fbb4ae",
+                                                     "#ffffcc","#e5d8bd","#fddaec","#f2f2f2")), ...)
 }
 
 scale_color_todd_dark_bright <- function(...){
