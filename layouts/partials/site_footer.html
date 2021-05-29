@@ -8,15 +8,16 @@
   <p class="powered-by">
     {{ with site.Copyright }}{{ replace . "{year}" now.Year | markdownify}} &middot; {{ end }}
 
-    <i class="fas fa-lightbulb" style="color:#e5be00"></i></a>
-    Created with curiosity,
-    <a href="https://github.com/spcanelon/silvia" target="_blank" rel="noopener">
-      <i class="fas fa-code-branch" style="color:#e5be00"></i></a>, the
+    <i class="fas fa-wrench" style="color:#3772ff"></i></a>
+    Built on no sleep using
     <a href="https://cran.r-project.org/" target="_blank" rel="noopener">
-      <i class="fab fa-r-project"></i> </a>
-    <a href="https://github.com/rstudio/blogdown" target="_blank" rel="noopener">blogdown</a> package, and the
-    <a href="https://sourcethemes.com/academic/" target="_blank" rel="noopener">Academic theme</a> for
-    <a href="https://gohugo.io" target="_blank" rel="noopener">Hugo</a>.
+      <i class="fab fa-r-project" style="color:#3772ff"></i> </a>
+    <a href="https://github.com/rstudio/blogdown" style="color:#3772ff" target="_blank" rel="noopener">blogdown</a> and the
+      <a href="https://gohugo.io" style="color:#3772ff" target="_blank" rel="noopener">Hugo</a>
+    <a href="https://sourcethemes.com/academic/" style="color:#3772ff" target="_blank" rel="noopener">Academic</a> theme
+        <a href="https://github.com/twarczak/data_warz" target="_blank" rel="noopener">
+      <i class="fas fa-code-branch" style="color:#77dd77"></i></a>
+
 
     {{ if not (in (slice "docs" "updates") .Type) }}
     <span class="float-right" aria-hidden="true">

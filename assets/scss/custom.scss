@@ -8,7 +8,6 @@
 //  change all rgb(40, 42, 54)    --> #1f222a -- page background
 //  change all rgb(139, 233, 253) --> #1f222a -- dark mode inline code text
 
-// COLOR VARIABLES
 // primary and secondary colors and variants
 $spc-primary:            #122140; // primary color
 $spc-primary-light:      #3d486b; // primary color, lighter variant
@@ -70,12 +69,12 @@ h1 {
 
 // links
 a {
-  color: $spc-secondary;  // link color
+  color: #3772ff; //$spc-secondary;  // link color
   cursor: pointer;
   &:focus,
   &:hover,
   &:active {
-    color: $spc-secondary-light !important;      // link color when hovering
+    color: $spc-secondary;//$spc-secondary-light !important;      // link color when hovering
   }
 }
 
@@ -96,6 +95,7 @@ a {
   left: 0.7rem;
   top: 0.6rem;
   overflow-x: hidden;
+  margin: 0 auto;
 }
 .featured-image-wrapper {
   position: relative;
@@ -268,7 +268,7 @@ background: white;                        // text background for experience card
     color: $spc-secondary;                        // text for card institution link
     border-bottom: solid 1px transparent;
     &:hover {
-      color: $spc-secondary-dark;
+      color: #3772ff; //$spc-secondary-dark;
     }
   }
   .card-image.hover-overlay::before {
@@ -403,7 +403,7 @@ hr {
 img {
 	margin-bottom: 1.5rem;
 	overflow: hidden;
-	background: #fff;
+	background: none;   // Todd changed
 	box-shadow: none;
 }
 iframe {
@@ -422,7 +422,7 @@ iframe {
   &:hover {
     color: #fff;
     background-color: $spc-secondary;
-    border-color: $spc-secondary-dark;
+    border-color: #3772ff; //$spc-secondary-dark;
   }
 }
 
@@ -446,7 +446,7 @@ iframe {
 // Page builder: _widgets.scss
 .dark {
   .home-section:nth-of-type(odd) {
-    background-color: mix($spc-00dp, white, 98%);   // odd sections: about, recent pubs, contact
+    background-color: mix($spc-00dp, white, 98%); // odd sections: about, recent pubs, contact
   }
   .home-section:nth-of-type(even) {
     background-color: $spc-00dp;   // even sections: experience, recent posts
@@ -458,7 +458,7 @@ body.dark {
   .docs-toc-link,
   .docs-sidebar .nav > li:not(.active) > a,
   .modal button.close {
-    color: $spc-text-medium;            // text of search field and summary text
+    color: #a90533; //$spc-text-medium;           // text of search field and summary text
     border-radius: .5rem;
     border-color: $spc-bkg-light-std;
     border: 0px solid;
@@ -467,20 +467,20 @@ body.dark {
 }
 
 body.dark {
-  background-color: $spc-00dp;         // base surface
+  background-color: $spc-00dp;  // base surface (footer body & scroll strip)
 }
 
 .dark hr {
   border: 0;
   height: 1px;
-  background: $spc-text-high;
+  background: #a90533; //$spc-text-high;
   background-image: none;
 }
 
 // Contact form
 .dark .form-control {
   color: $spc-text-medium;            // text of contact boxes
-  background-color: $spc-bkg-dark;
+  background-color: $spc-00dp; //$spc-bkg-dark;
   border-radius: 2px;
   border-color: $spc-bkg-light-std;
   border: 0.5px solid $spc-text-low;
@@ -505,7 +505,7 @@ body.dark {
       &:focus,
       &:hover,
       &:active {
-        color: $spc-secondary-dark !important;   // magnifying glass & palette icon color when hovering
+        color: #3772ff !important; //$spc-secondary-dark !important;   // magnifying glass & palette icon color when hovering
       }
     }
     .dropdown-menu {
@@ -529,7 +529,7 @@ body.dark {
     &:hover,
     &:active {
       font-weight: 700;
-      color: $spc-secondary-dark !important;   // text color of name when hovering
+      color: #3772ff !important; //$spc-secondary-dark !important;   // text color of name when hovering
     }
   }
   .navbar-toggler {
@@ -538,7 +538,7 @@ body.dark {
     &:focus,
     &:hover,
     &:active {
-      color: $spc-secondary-dark;              // color of toggle menu
+      color: #3772ff; //$spc-secondary-dark;              // color of toggle menu
     }
   }
   .navbar-collapse {                           // navbar collapsible dropdown menu
@@ -555,12 +555,12 @@ body.dark {
     color: $spc-text-high;
   }
   a { // links
-    color: $spc-secondary-dark;        // link color
+    color: #77dd77; //$spc-secondary-dark;        // link color
     cursor: pointer;
     &:focus,
     &:hover,
     &:active {
-      color: $spc-secondary !important;           // link color when hovering
+      color:  $spc-secondary !important;           // link color when hovering
     }
   }
 }
@@ -571,24 +571,24 @@ body.dark {
 
 .dark {
   code {
-    color: #9bc4cb; //mix($spc-secondary-dark, white, 70);   // inline and code block text
-    background: $spc-04dp;
-    font-size: 0.9em;
+    color: $spc-secondary;  //#9bc4cb; //mix($spc-secondary-dark, white, 70);   // inline and code block text
+    background: #242423; //#212529; //$spc-04dp;
+    font-size: 0.8em;
   }
   pre {
     border: 0px solid $spc-01dp;                 // code block border
     box-shadow: 0px 0px 0px $spc-bkg-dark;       // code block shadow (values: h-shift v-shift intensity)
     padding: 0.25em;
-    background: $spc-01dp;                       // code block backround
+    background: #474448; //$spc-01dp;                       // code block backround
     overflow-x: auto;
     border-radius: 0px;                          // corner rounding
   }
   pre code {
-    background: none;
+    background: #9bc4cb; //none;
     font-size: 0.8rem;
   }
   .hljs {
-  	background-color: $spc-02dp;                // code block text background
+  	background-color: #242423; //$spc-02dp;     // code block text background
   }
 }
 
@@ -597,7 +597,7 @@ body.dark {
 .dark div.alert-note > div:first-child::before {
   font-family: 'Font Awesome 5 Free';
   font-weight: 900;
-  color: $spc-secondary-dark;
+  color: #3772ff; //$spc-secondary-dark;
   content: "\f00c"; // check mark icon
 }
 // message box
@@ -643,9 +643,9 @@ body.dark {
 // cards (i.e. experience)
 .dark {
   .card {
-  background: $spc-01dp;                        // text background for experience cards
+  background: #212529; //$spc-01dp;                        // text background for experience cards
     h4 a {
-      color: $spc-secondary-dark;                        // text for card institution link
+      color: #3772ff; //$spc-secondary-dark;                        // text for card institution link
       border-bottom: solid 1px transparent;
       &:hover {
         color: $spc-secondary !important;
@@ -653,10 +653,10 @@ body.dark {
     }
   }
   .experience .m-2 .border.exp-fill {           // timeline diagram for experience cards -- fill
-    background-color: $spc-secondary-dark !important;
+    background-color: $spc-secondary !important;
   }
   .experience .m-2 .border, .experience .col.border-right {
-      border-color: $spc-secondary-dark !important;
+      border-color: $spc-secondary !important;
   }
   .card-simple {
     background: $spc-01dp;                        // text background for post cards
@@ -672,8 +672,8 @@ body.dark {
 .dark {
   .btn { // Buttons for "send" button in the contact section
   color: $spc-primary-dark;                   // text
-  border-color: $spc-secondary-dark;            // border
-  background-color: $spc-secondary-dark;                 // button background
+  border-color: #3772ff; //$spc-secondary-dark;            // border
+  background-color: #3772ff; //$spc-secondary-dark;                 // button background
     &:hover {
       color: $spc-primary-dark;              // text when hovering
       border-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);          // border color when hovering
@@ -686,8 +686,8 @@ body.dark {
     background-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);                 // button background
     &:hover {
       color: $spc-primary-dark !important;    // text when hovering
-      border-color: $spc-secondary-dark;           // border when hovering
-      background-color: $spc-secondary-dark;       // button background when hovering
+      border-color: #3772ff; //$spc-secondary-dark;           // border when hovering
+      background-color: #3772ff; //$spc-secondary-dark;       // button background when hovering
     }
   }
   .btn-toolbar { // Toolbar buttons
@@ -730,12 +730,12 @@ body.dark {
     border-width: 1px;
     &:hover {
       border-style: none;
-      box-shadow: 0 0 0 2px $spc-secondary-dark;
+      box-shadow: 0 0 0 2px #3772ff; //$spc-secondary-dark;
     }
     &:focus {
       border-style: solid;
       border-width: 1px;
-      border: $spc-secondary-dark;
+      border: #3772ff; //$spc-secondary-dark;
     }
   }
 }

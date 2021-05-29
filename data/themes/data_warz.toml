@@ -4,7 +4,7 @@
 name = "My Theme: data_warz"
 
 # Is theme light or dark?
-light = true
+light = false
 
 # Primary
 primary = "#e5be00" # changes colors of links

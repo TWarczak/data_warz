@@ -11,6 +11,7 @@ output:
       code_folding: show
 editor_options:
   chunk_output_type:
+
 ---
 
 -   [🥅 Project Goal](#goal)
