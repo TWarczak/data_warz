@@ -16,7 +16,7 @@ tags:
    - time-series
    - tidyverse
    - R
-summary: "In my introductory blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist.""
+summary: "In my introductory blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist."
 featured: "featured-hex-modeltime.jpeg"
 image:
    caption: ''

@@ -39,3 +39,4 @@ prophet
 kernlab
 ranger
 forecast
+knitr
