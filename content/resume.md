@@ -15,7 +15,7 @@ twarczak@gmail.com\
 ## Projects
 
 ### Forecasting Daily Sales w/ {modeltime}
-
+* Showcased the {modeltime} R package to forecast 3 months of daily sales in Q1 for a 'Superstore' company using Kaggle dataset. [blog-post](https://toddwarczak.netlify.app/post/modeltime/), [html-link](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index.html)  
 
 ## Education {.divider}
 
