@@ -16,6 +16,7 @@ timeout = 600000
 title = "data warz"
 theme = "hugo-academic"
 
+
 [imaging]
 anchor = "smart"
 quality = 90
@@ -27,8 +28,17 @@ defaultMarkdownHandler = "goldmark"
 [markup.goldmark.renderer]
 unsafe = true
 [markup.highlight]
-codeFences = false
-
+anchorLineNos = false
+codeFences = true
+guessSyntax = false
+hl_Lines = ""
+lineAnchors = ""
+lineNoStart = 1
+lineNos = false
+lineNumbersInTable = true
+noClasses = true
+style = "monokai"
+tabWidth = 3
 [markup.tableOfContents]
 endLevel = 3
 startLevel = 2

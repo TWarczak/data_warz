@@ -35,24 +35,26 @@ image:
 -   [🏆 Forecast w/ Best Models](#forecast)
 -   [🏁 Ensemble & Save Work](#ensemble)
 
-## 🥅 Goal of this Project
+## 🥅 Goal of this Project {#goal}
 
-For this blog post, I want to showcase the `{modeltime}` packages to
-forecast 3 months of daily sales for a young ‘Superstore’ company
-selling furniture, technology, and office supplies.
+For this blog post, I use the `{modeltime}` package to
+forecast 3 months of daily sales in Q1 for a young ‘Superstore’ company
+selling furniture, technology, and office supplies. The forecast can 
+then be used to make decisions about supply-chain orders, warehouse 
+inventory, and if/when new employees are needed to meet predicted 
+sales demand after the holiday season. 
 
-## 🗂 Obtain Data
+## 🗂 Obtain Data {#data}
 
 The [Superstore Sales
 Dataset](https://www.kaggle.com/rohitsahoo/sales-forecasting/) on Kaggle
 is relatively unexplored. There’s a couple python exploratory data
 analysis projects posted but nothing using R and only one 7-day forecast
-using a simple SARIMAX model. Hopefully we can blow that one forecast
-out of the water using mainly `{timetk}` and `{modeltime}`.
+using a simple SARIMAX model.
 
     df <- read_csv("train.csv")
 
-## 🛁 Clean Data
+## 🛁 Clean Data {#clean}
 
     glimpse(df)
 
@@ -125,7 +127,7 @@ What period of time does this data cover?
 This is a daily dataset spanning just under 4 years from 2015-01-03 to
 2018-12-30. There are gaps though!
 
-## 🔭 Exploratory Data Analysis
+## 🔭 Exploratory Data Analysis {#explore}
 
 Let’s group by `region`/`state` to see where the ‘Superstore’ does
 business, looking at total `orders` and total `sales`.
@@ -232,7 +234,7 @@ orders are for office supplies, but their largest sales are for
 technology; not surprising. They have a some loyal customers too, like
 Seth Vernon.
 
-## 🧮 Prep Data for Forecasting
+## 🧮 Prep Data for Forecasting {#prep}
 
 Now lets focus on sales within this time-series. If we want to forecast
 sales, we can’t use any other variable but `order_date`. After
@@ -277,9 +279,9 @@ missing days.
 ### Pad Missing Dates
 
     sales_daily_pad_tbl <- sales_daily_tbl %>% 
-                           pad_by_time(order_date, 
-                                       .by        = 'day', 
-                                       .pad_value = 0) 
+                            pad_by_time(order_date, 
+                                        .by        = 'day', 
+                                        .pad_value = 0) 
 
     glimpse(sales_daily_pad_tbl)
 
@@ -373,8 +375,8 @@ the process.
 ### Add Forecast/Lag/Rolling Averages
 
     forecast_3_month <- 84
-    lag_period       <- 84            # 84 smallest lag period to get our forecast of 84 into the future
-    rolling_periods  <- c(30, 60, 90) # 1 month, 2 month, and 3 month moving averages as features to catch the trend
+    lag_period       <- 84            # 84 smallest lag period to get forecast of 84d into the future
+    rolling_periods  <- c(30, 60, 90) # 1-month, 2-month, and 3-month moving avgs as features to catch trend
 
 ### Full Data
 
@@ -1672,7 +1674,7 @@ variables and dummy the nominal variables.
 Even without Fourier-Series, look at all the features that may help us
 modele future sales. We started with just `order_date`.
 
-## 🏗 Build Workflows
+## 🏗 Build Workflows {#build}
 
 We don’t know which algorithms will work best with our data to predict
 sales, so lets train and test a bunch of models. Building workflows
@@ -1849,8 +1851,6 @@ Set `order_date` to ‘indicator’
        add_model(spec = mars(mode = 'regression') %>% set_engine('earth')) %>%
        add_recipe(recipe_spec_no_f %>% update_role(order_date, new_role = 'indicator')) %>%
        fit(training(splits))
-
-    modeltime_table(wflw_fit_mars, wflw_fit_mars_no_f) %>% modeltime_calibrate(testing(splits)) %>% modeltime_accuracy() %>% arrange(rmse)
 
 ### GLMNET
 
@@ -2500,7 +2500,7 @@ perform.
 Not bad. But we can tune these models for a better fit before
 forecasting.
 
-## 🔧 Hyperparameter Tuning
+## 🔧 Hyperparameter Tuning {#tune}
 
 There are two types of cross-validation we’ll need for resampling.
 K-Fold CV for models that can train on random data and Time-Series CV
@@ -2804,7 +2804,7 @@ big difference.
                                finalize_workflow(select_best(tune_results_nnetar_f_2, 'rmse')) %>% 
                                fit(training(splits))
 
-## 🏆 Forecast w/ Best Models
+## 🏆 Forecast w/ Best Models {#forecast}
 
 After lots of tuning, we have 6 models that have been tuned and fit back
 onto the training data. Now let’s evaluate their performance on the
@@ -2926,7 +2926,7 @@ of sales.
 
 ![](index_files/figure-markdown_strict/unnamed-chunk-106-1.png)
 
-## 🏁 Ensemble & Save Work
+## 🏁 Ensemble & Save Work {ensemble}
 
 There’s plenty more we could do to improve these models, but the last
 thing I’ll show here is a quick and easy weighted model. Instead of
