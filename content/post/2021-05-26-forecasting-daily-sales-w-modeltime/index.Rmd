@@ -1586,5 +1586,7 @@ forecast_tbl_final
 Our 3-month forecast predicts a reduction in sales over January and February. The models then predict an increase in March sales. There's always the possibility for unexpectedly big spikes in single day sales, as demonstrated in our model confidence intervals. However, it is more logical to expect sales to decrease until March, so the company should prepare supply-chains, warehouse inventory, and hire/train new employees accordingly.
 
 
+For more nuanced decisions, we could run another version of this pipeline to forecast sales or orders for different categories/segments or for individual states/regions. Similar to our EDA towards the beginning of this project.
+
 In a future post I'll show how to use the `{modeltime.ensemble}` package for creating more sophisticated ensembles. Until then, I hope you've gotten a good sense for what forecasting with `{modeltime}` can do. If you already model with `{tidymodels}`, `{modeltime}` is a package worth digging into. Find the complete code @ [github.com/TWarczak](https://github.com/TWarczak/data_warz/content/post/2021-05-20-forecasting-daily-sales-w-modeltime). 
 
