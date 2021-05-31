@@ -1671,7 +1671,7 @@ variables and dummy the nominal variables.
     ## $ order_date_USWashingtonsBirthday   <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
 
 Even without Fourier-Series, look at all the features that may help us
-modele future sales. We started with just `order_date`.
+model future sales. We started with just `order_date`.
 
 ## 🏗 Build Workflows {#build}
 
@@ -2565,8 +2565,9 @@ Each of my tuning sets consist of:
     -   chose values that associate with low rmse and high rsq
 
 After each set I narrow the tuning grid, depending on what the plot
-shows me. Then I do it again until its…good…enough…? Models tuning with
-many tuning parameters took a 5-10 minutes to run on my 2019 16 GB, 1.6
+shows me. Then I do it again until additional tunes make little impact on the 
+rmse/rsq. Hint - pay attention to the y-axis of the plots. Models tuning with
+many tuning parameters could take ~8 minutes to run on my 2019 16 GB, 1.6
 GHz MacBook Air. I could use an upgrade.
 
 ### SVM - no Fourier-Series
@@ -2629,7 +2630,8 @@ GHz MacBook Air. I could use an upgrade.
 
 ![](index_files/figure-markdown_strict/unnamed-chunk-51-1.png)
 
-Update the grid and do round 2.
+The range of the rmse and rsq y-axis is wide-enough to use a round of tuning. Update the grid and do round 2.
+
 
 **Tuning Grid 2**
 
@@ -2807,7 +2809,7 @@ big difference.
 
 After lots of tuning, we have 6 models that have been tuned and fit back
 onto the training data. Now let’s evaluate their performance on the
-testing data
+testing data.
 
 **Collect Tuned Models**
 
@@ -3026,6 +3028,9 @@ information, so they can get quite large.
 
 *The `.value` is our daily sales prediction for the corresponding date
 (`.index`).*
+
+Our 3-month forecast predicts a reduction in sales over January and February. The models then predict an increase in March sales. There's always the possibility for unexpectedly big spikes in single day sales, as demonstrated in our model confidence intervals. However, it is more logical to expect sales to decrease until March, so the company should prepare supply-chains, warehouse inventory, and hire/train new employees accordingly.
+
 
 In a future post I’ll show how to use the `{modeltime.ensemble}` package
 for creating more sophisticated ensembles. Until then, I hope you’ve
