@@ -269,12 +269,11 @@ time-series.
 
 ![](index_files/figure-markdown_strict/Daily%20Total%20Sales-1.png)
 
-There are no days with 0 orders/sales. But after in our EDA we noticed
-there are gaps in the data. This data spans just under 4 years, but we
-only have 1,230 rows of daily data. If we have a row for every day, we
-should have about 365 \* 4 or 1,460 rows. We need to pad these missing
-days so our time-series is complete. We can fill sales with 0 for these
-missing days.
+There are no days with 0 orders/sales. But in our EDA we noticed gaps 
+in the data. This data spans just under 4 years, but we only have 1,230 
+rows of daily data. If we have a row for every day, we should have about 
+365 \* 4 or 1,460 rows. We need to pad these missing days so our 
+time-series is complete. We can fill sales with 0 for these missing days.
 
 ### Pad Missing Dates
 
