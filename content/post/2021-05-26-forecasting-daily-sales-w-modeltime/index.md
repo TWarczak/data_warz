@@ -34,6 +34,8 @@ image:
 -   [🔧 Tune Models](#tune)
 -   [🏆 Forecast w/ Best Models](#forecast)
 -   [🏁 Ensemble & Save Work](#ensemble)
+-   [🤔 Decisions](#decisions)
+
 
 ## 🥅 Goal of this Project {#goal}
 
@@ -3028,6 +3030,8 @@ information, so they can get quite large.
 
 *The `.value` is our daily sales prediction for the corresponding date
 (`.index`).*
+
+## 🤔 Decisions {#decisions}
 
 Our 3-month forecast predicts a reduction in sales over January and February. The models then predict an increase in March sales. There's always the possibility for unexpectedly big spikes in single day sales, as demonstrated in our model confidence intervals. However, it is more logical to expect sales to decrease until March, so the company should prepare supply-chains, warehouse inventory, and hire/train new employees accordingly.
 
