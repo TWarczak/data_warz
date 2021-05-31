@@ -15,14 +15,16 @@ twarczak@gmail.com\
 ## Projects
 
 ### Forecasting Daily Sales w/ {modeltime}
-* Showcased the {modeltime} R package to forecast 3 months of daily sales in Q1 for a 'Superstore' company using Kaggle dataset. [blog-post](https://toddwarczak.netlify.app/post/modeltime/), [html-link](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index.html)  
+* Showcased the {modeltime} R package to forecast 3 months of daily sales in Q1 for a 'Superstore' company using Kaggle dataset. [blog-post](https://toddwarczak.netlify.app/post/modeltime/)
+
+### Tidy Tuesday 
 
 ## Education {.divider}
 
 ### PhD Molecular & Cellular Biology &mdash; Dartmouth College
 #### Sep 2012 - August 2020
 * Engineered a genome-wide association study (GWAS) to identify genes controlling arsenic tolerance in plants and determined variation in the expression of *A. thaliana* gene *NIP1;1* on 4th chromosome as the major genetic factor for tolerating arsenic. 
-* Suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?
+* Developed and analyzed the first cell-type specific expression map for *A. thaliana* genes involved in arsenite acquisition, efflux, sequestration, etc. for root epidermal, cortical, and endodermal cells.
 
 ### BS Biology &mdash; University of Utah
 #### Sep 2007 - May 2012
