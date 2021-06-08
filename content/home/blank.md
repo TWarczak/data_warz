@@ -1,5 +1,5 @@
 ---
-# An instance of the Featured widget.
+# An instance of the Blank widget.
 # Documentation: https://wowchemy.com/docs/page-builder/
 widget: blank
 
@@ -15,17 +15,13 @@ weight: 50
 title: #TidyTuesday
 subtitle: ""
 
-album:"tidytuesday"
+album:
 
 gallery_item:
-- album: "tidytuesday"
+- album: gallery
   image: "rainbow_road_low_res.png"
-  caption: "Mario Kart World Records - Cumulative days record(s) held by players."
-- album: "tidytuesday"
+  caption: Mario Kart World Records - Cumulative days record(s) held by players.
+- album: gallery
   image: "survivor_low_res.png"
   caption: Write your image 2 caption here
-
-design:
-  # Choose how many columns the section has. Valid values: 1 or 2.
-  columns: '2'
 ---
