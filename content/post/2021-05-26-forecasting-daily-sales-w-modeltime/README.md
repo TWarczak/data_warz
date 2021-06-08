@@ -3,7 +3,7 @@ forecast 3 months of daily sales in Q1 for a young ‘Superstore’ company
 selling furniture, technology, and office supplies. The forecast can 
 then be used to make decisions about supply-chain orders, warehouse 
 inventory, and if/when new employees are needed to meet predicted 
-sales demand after the holiday season. [data warz Blog Post](https://toddwarczak.netlify.app/post/modeltime/)
+sales demand after the holiday season. [data warz (blog post)](https://toddwarczak.netlify.app/post/modeltime/)
 
 
 *** 
