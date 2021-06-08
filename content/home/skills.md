@@ -4,13 +4,13 @@
 widget: featurette
 
 # Activate this widget? true/false
-active: false
+active: true
 
 # This file represents a page section.
 headless: false
 
 # Order that this section appears on the page.
-weight: 40
+weight: 39
 
 title: Skills
 subtitle:
