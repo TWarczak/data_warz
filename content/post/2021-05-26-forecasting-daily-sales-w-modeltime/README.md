@@ -24,5 +24,22 @@ sales demand after the holiday season.
 
 ***
 
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Time_series%20CV%20Plan-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Time_Series%20CV%20Plan-1.png)
 
+***
 
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Tuned%20Models%20fit%20on%20testing(splits)-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Tuned%20Models%20fit%20on%20testing(splits)-1.png)
+
+***
+
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/unnamed-chunk-105-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/unnamed-chunk-105-1.png)
+
+***
+
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/unnamed-chunk-106-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/unnamed-chunk-106-1.png)
+
+***
+
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Ensemble%20Forecast-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Ensemble%20Forecast-1.png)
+
+***
