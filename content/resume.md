@@ -18,7 +18,7 @@ twarczak@gmail.com\
 * Showcased the {modeltime} R package to forecast 3 months of daily sales in Q1 for a 'Superstore' company using Kaggle dataset. [blog-post](https://toddwarczak.netlify.app/post/modeltime/)
 
 ### TidyTuesday 
-* An ongoing contribution to the #TidyTuesday challenge. This is a weekly twitter project focusing on cleaning, wrangling, summarizing, and arranging a new dataset in R to produce a single chart, typically with {ggplot2} and {tidyverse} tools. Shared via #tidytuesday. 
+* My submissions to the #TidyTuesday challenge. This is a weekly twitter project focusing on cleaning, wrangling, summarizing, and arranging a new dataset in R to produce a single chart, typically with {ggplot2} and {tidyverse} tools. Shared via #TidyTuesday. 
 
 
 ## Education {.divider}

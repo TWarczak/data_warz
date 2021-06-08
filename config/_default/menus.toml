@@ -24,8 +24,8 @@ weight = 20
 #weight = 40
 
 [[main]]
-name = "Publications"
-url = "#publications"
+name = "TidyTuesday"
+url = "#tidytuesday"
 weight = 30
 
 #[[main]]
