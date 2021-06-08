@@ -15,7 +15,7 @@ weight: 50
 title: #TidyTuesday
 subtitle: ""
 
-album:
+album: gallery
 
 gallery_item:
 - album: gallery
