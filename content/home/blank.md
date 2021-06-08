@@ -10,7 +10,7 @@ active: true
 headless: true
 
 # Order that this section appears on the page.
-weight: 50
+weight: 40
 
 title: #TidyTuesday
 subtitle: ""
