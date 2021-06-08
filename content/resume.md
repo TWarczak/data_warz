@@ -12,12 +12,14 @@ twarczak@gmail.com\
 [github.com/TWarczak](https://github.com/TWarczak)\
 [toddwarczak.netlify.app](https://toddwarczak.netlify.app)
 
-## Projects
+## Projects {.divider}
 
 ### Forecasting Daily Sales w/ {modeltime}
 * Showcased the {modeltime} R package to forecast 3 months of daily sales in Q1 for a 'Superstore' company using Kaggle dataset. [blog-post](https://toddwarczak.netlify.app/post/modeltime/)
 
-### Tidy Tuesday 
+### TidyTuesday 
+* An ongoing contribution to the #TidyTuesday challenge. This is a weekly twitter project focusing on cleaning, wrangling, summarizing, and arranging a new dataset in R to produce a single chart, typically with {ggplot2} and {tidyverse} tools. Shared via #tidytuesday. 
+
 
 ## Education {.divider}
 
@@ -58,18 +60,6 @@ Swimming\
 * Culpa qui officia deserunt mollit anim id est laborum
 * Nisi ut aliquip ex ea commodo consequatn
 
-### Network Analyst &mdash; ETW Worldwide
-#### May 2011 - Jul 2013
-* Sed ut perspiciatis unde omnis iste natus error sit voluptatem
-* Accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae
-* Ab illo inventore veritatis et quasi architecto beatae vitae dicta
-* Sunt explicabo nemo enim ipsam voluptatem quia voluptas sit
-
-### Junior Analyst &mdash; JW Stanley Corp
-#### May 2010 - Dec 2010
-* Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet
-* Consectetur, adipisci velit, sed quia non numquam eius modi tempora
-* Incidunt ut labore et dolore magnam aliquam quaerat voluptatem
 
 ## Technical skills {.divider}
 
