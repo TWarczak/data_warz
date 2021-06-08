@@ -12,15 +12,15 @@ sales demand after the holiday season.
 
 ***
 
-![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/logo-modeltime.png](https://raw.githubusercontent.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/logo-modeltime.png)
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/logo-modeltime.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/logo-modeltime.png)
 
 ***
 
-![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Sales%20by%20State/Region-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Sales%20by%20State/Region-1.png)
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Sales%20by%20State/Region-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Sales%20by%20State/Region-1.png)
 
 ***
 
-![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Orders%20%26%20Sales%20in%20log(%24)%20per%20Customer%20by%20Category/Segment-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Orders%20%26%20Sales%20in%20log(%24)%20per%20Customer%20by%20Category/Segment-1.png)
+![.content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Orders%20%26%20Sales%20in%20log(%24)%20per%20Customer%20by%20Category/Segment-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime/index_files/figure-markdown_strict/Orders%20%26%20Sales%20in%20log(%24)%20per%20Customer%20by%20Category/Segment-1.png)
 
 ***
 
