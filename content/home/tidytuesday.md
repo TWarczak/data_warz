@@ -15,14 +15,14 @@ weight: 50
 title: #TidyTuesday
 subtitle: ""
 
-album:
+album:"tidytuesday"
 
 gallery_item:
-- album: tidytuesday
-  image: rainbow_road_low_res.png
-  caption: Mario Kart World Records - Cumulative days record(s) held by players. 
-- album: tidytuesday
-  image: survivor_low_res.png
+- album: "tidytuesday"
+  image: "rainbow_road_low_res.png"
+  caption: "Mario Kart World Records - Cumulative days record(s) held by players."
+- album: "tidytuesday"
+  image: "survivor_low_res.png"
   caption: Write your image 2 caption here
 
 design:
