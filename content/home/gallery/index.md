@@ -15,10 +15,10 @@ subtitle:
 gallery_item:
 - album: gallery
   image: rainbow_road_low_res.png
-  caption: Mario Kart World Records - Cumulative days record(s) held by players.
+  caption: Mario Kart World Records - Cumulative days the record(s) is held by players. [Github](https://github.com/TWarczak/TidyTuesday/tree/main/plots/2021_22_mariokart)
 - album: gallery
   image: survivor_low_res.png
-  caption: Write your image 2 caption here
+  caption: Sunburst plot showing the different personality types of all Survivor contestants vs just the winners. [Github](https://github.com/TWarczak/TidyTuesday/tree/main/plots/2021_23_survivor)
 ---
 
 {{< gallery >}}
