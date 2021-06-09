@@ -201,12 +201,18 @@ ul.ul-edu li {
   &:not(:first-of-type) {
     padding: 25px 0 50px 0;
   }
-  .wg-experience .card-body {
-    padding: 2em;                // padding around text in experience cards
+//  .wg-experience .card-body {
+//    padding: 2em;                // padding around text in experience cards
+//  }
+//  .wg-experience .card .card-text {
+//    padding: 0;
+//  }
+    .wg-blank .section-heading {
+    h1 {                         // erases the margin-bottom for h1
+      margin: 0 0 0 0;
+    }
   }
-  .wg-experience .card .card-text {
-    padding: 0;
-  }
+
   .wg-pages .section-heading {
     h1 {                         // erases the margin-bottom for h1
       margin: 0 0 0 0;
