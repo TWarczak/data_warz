@@ -25,7 +25,7 @@ weight = 20
 
 [[main]]
 name = "TidyTuesday"
-url = "content/home/gallery/index.md"
+url = "gallery/#index"
 weight = 30
 
 #[[main]]
@@ -35,7 +35,7 @@ weight = 30
 
 # Link to a PDF of your resume/CV from the menu.
 # To enable, copy your resume/CV to `static/files/cv.pdf` and uncomment the lines below.
- [[main]]
-    name = "resume"
-    url = "files/resume.pdf"
-    weight = 40
+# [[main]]
+#    name = "resume"
+#   url = "files/resume.pdf"
+#  weight = 40

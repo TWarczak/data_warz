@@ -339,7 +339,8 @@ for the future dates we want to forecast. Currently future forecast
 dates have only order\_date to predict with.
 
 Let’s look at ACF/PACF plots to see if any periods look usable.  
-\#\#\# ACF/PACF
+
+### ACF/PACF
 
     lag_labels <- data.frame(name  = c("ACF","ACF","ACF","ACF","ACF","PACF","PACF","PACF","PACF"),
                              label = c('7','14','21','28','357','7','14','21','28'))

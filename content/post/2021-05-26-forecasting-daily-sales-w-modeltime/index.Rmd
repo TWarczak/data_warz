@@ -236,15 +236,16 @@ z <- data_clean_tbl %>%
                    values_to = 'percent')
 
 outlier_furniture_consumer <- x %>% filter(segment  == 'Consumer',
-                                            category == "Furniture") %>%
-                                     arrange(desc(orders)) %>% head()
+                                           category == "Furniture") %>%
+                                    arrange(desc(orders)) %>% head()
 
 outlier_technology_corporate_homeoffice <- x %>%
                                            filter(segment  == 'Corporate' | segment == "Home Office",
                                                   category == "Technology") %>%
                                            arrange(desc(log_sales)) %>% head()
+
 # Make specific tbl for outlier Seth Vernon so label doesn't appear in other facets
-seth_vernon <- data.frame(category = factor("Furniture", levels = c("Furniture","Office Supplies","Technology")),
+seth_vernon <- data.frame(category = factor("Furniture", levels = c("Furniture","Office Supplies","Technology")), 
                           segment  = factor("Consumer", levels = c("Consumer","Corporate","Home Office")))
 
 ```
@@ -359,10 +360,11 @@ sales_daily_pad_trans_tbl %>%
    theme_dark_grey()
 ```
 
-We might want to add lags, rolling lags, and/or fourier-series features that could help our forecast. This is way to add features to regress on for the future dates we want to forecast. Currently future forecast dates have only order_date to predict with. 
+We might want to add lags, rolling lags, and/or fourier-series features that could help our forecast. This is way to add features to regress on for the future dates we want to forecast. Currently future forecast dates have only `order_date` to predict with. 
 
-Let's look at ACF/PACF plots to see if any periods look usable.        
-###  ACF/PACF
+Let's look at ACF/PACF plots to see if any periods look usable.     
+
+### ACF/PACF
 ```{r Lag Diagnostics, fig.width = 16, fig.height = 8}
 
 lag_labels <- data.frame(name  = c("ACF","ACF","ACF","ACF","ACF","PACF","PACF","PACF","PACF"),
@@ -559,7 +561,7 @@ model_fit_arima <- arima_reg() %>%
 ```
 
 ###  ARIMA BOOST
-Keep `order_date` feature
+*Keep `order_date` feature*
 ```{r, results='hide', cache=TRUE}
 
 wflw_fit_arimaboost <- workflow() %>%
@@ -574,7 +576,7 @@ wflw_fit_arimaboost_no_f <- workflow() %>%
 ```
 
 ###  PROPHET
-Keep `order_date` feature
+*Keep `order_date` feature*
 ```{r, results='hide', cache=TRUE}
 
 wflw_fit_prophet <- workflow() %>%
@@ -589,7 +591,7 @@ wflw_fit_prophet_no_f <- workflow() %>%
 ```
 
 ###  XGBOOST
-Set `order_date` to 'indicator'
+*Set `order_date` to 'indicator'*
 ```{r, results='hide', cache=TRUE}
 
 wflw_fit_xgboost <- workflow() %>%
@@ -604,7 +606,7 @@ wflw_fit_xgboost_no_f <- workflow() %>%
 ```
 
 ###  PROPHET BOOST
-Keep `order_date` feature
+*Keep `order_date` feature*
 ```{r, results='hide', cache=TRUE}
 
 wflw_fit_prophet_xgboost <- workflow() %>%
@@ -624,7 +626,7 @@ wflw_fit_prophet_xgboost_no_f <- workflow() %>%
 I turned Prophet seasonalities off so prophet is only used for trend. XGBoost will model seasonality with the Prophet model's residuals using the calandar features from the recipe.
 
 ###  SVM
-Set `order_date` to 'indicator'
+*Set `order_date` to 'indicator'*
 ```{r, results='hide', cache=TRUE}
 set.seed(321)
 wflw_fit_svm <- workflow() %>%
@@ -639,7 +641,7 @@ wflw_fit_svm_no_f <- workflow() %>%
 ```
 
 ###  RANDOM FOREST
-Set `order_date` to 'indicator'
+*Set `order_date` to 'indicator'*
 ```{r, results='hide', cache=TRUE}
 set.seed(321)
 wflw_fit_rf <- workflow() %>%
@@ -654,7 +656,7 @@ wflw_fit_rf_no_f <- workflow() %>%
 ```
 
 ###  NNET
-Set `order_date` to 'indicator'
+*Set `order_date` to 'indicator'*
 ```{r, results='hide', cache=TRUE}
 
 set.seed(321)
@@ -672,7 +674,7 @@ wflw_fit_nnet_no_f <- workflow() %>%
 ```
 
 ###  NNETAR
-Keep `order_date` feature
+*Keep `order_date` feature*
 ```{r, results='hide', cache=TRUE}
 set.seed(321)
 wflw_fit_nnetar <- workflow() %>%
@@ -687,7 +689,7 @@ wflw_fit_nnetar_no_f <- workflow() %>%
 ```
 
 ###  MARS
-Set `order_date` to 'indicator'
+*Set `order_date` to 'indicator'*
 ```{r, results='hide', cache=TRUE}
 
 wflw_fit_mars <- workflow() %>%
@@ -702,7 +704,7 @@ wflw_fit_mars_no_f <- workflow() %>%
 ```
 
 ###  GLMNET
-Set `order_date` to 'indicator'
+*Set `order_date` to 'indicator'*
 ```{r, results='hide', cache=TRUE}
 
 wflw_fit_glmnet <- workflow() %>%
