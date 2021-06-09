@@ -25,7 +25,7 @@ weight = 20
 
 [[main]]
 name = "TidyTuesday"
-url = "gallery/#index"
+url = "gallery/index.md"
 weight = 30
 
 #[[main]]
