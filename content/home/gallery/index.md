@@ -10,7 +10,7 @@ headless: true
 weight: 40
 
 title: TidyTuesday
-subtitle:High-resolution images at [Github](https://github.com/TWarczak/TidyTuesday)
+subtitle: High-resolution images at [Github](https://github.com/TWarczak/TidyTuesday)
 
 gallery_item:
 - album: gallery
