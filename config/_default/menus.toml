@@ -25,7 +25,7 @@ weight = 20
 
 [[main]]
 name = "TidyTuesday"
-url = "tidytuesday/#tidytuesday"
+url = "#tidytuesday"
 weight = 30
 
 #[[main]]

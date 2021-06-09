@@ -12,3 +12,4 @@ node_modules/
 .Ruserdata
 .DS_Store
 Thumbs.db
+/public/
