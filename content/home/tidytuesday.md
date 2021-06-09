@@ -17,13 +17,6 @@ subtitle:
 
 design:
   columns: "2"
-  background:
-    image:
-    image_darken:
-    image_parallax:
-    image_position:
-    image_size:
-    text_color_light:
   spacing:
     padding: ["20px", "0", "20px", "0"]
 
