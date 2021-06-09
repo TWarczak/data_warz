@@ -9,7 +9,7 @@ url = "#about"
 weight = 10
 
 [[main]]
-name = "Posts"
+name = "Blog"
 url = "#posts"
 weight = 20
 
@@ -23,10 +23,10 @@ weight = 20
 #url = "#talks"
 #weight = 40
 
-#[[main]]
-#name = "TidyTuesday"
-#url = "#tidytuesday"
-#weight = 30
+[[main]]
+name = "TidyTuesday"
+url = "content/home/gallery/index.md"
+weight = 30
 
 #[[main]]
 #name = "Contact"
