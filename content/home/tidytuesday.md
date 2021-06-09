@@ -19,11 +19,11 @@ design:
   columns: "2"
   background:
     image:
-    image_darken: 1.0
-    image_parallax: true
-    image_position: center
-    image_size: cover
-    text_color_light: false
+    image_darken:
+    image_parallax:
+    image_position:
+    image_size:
+    text_color_light:
   spacing:
     padding: ["20px", "0", "20px", "0"]
 

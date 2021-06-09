@@ -1,5 +1,5 @@
 ---
 summary: More about my work experience
-title: "TidyTuesday"
+title: "RidyRuesday"
 type: widget_page
 ---
