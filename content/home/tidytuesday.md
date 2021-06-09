@@ -29,9 +29,9 @@ design:
 
 gallery_item:
 - album: gallery
-  image: rainbow_road_low_res.png
+  image: "rainbow_road_low_res.png"
   caption: Mario Kart World Records - Cumulative days record(s) held by players.
 - album: gallery
-  image: survivor_low_res.png
+  image: "survivor_low_res.png"
   caption: Write your image 2 caption here
 ---
