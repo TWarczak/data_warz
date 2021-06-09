@@ -1,3 +1,30 @@
+---
+title: Forecasting Daily Sales w/ {modeltime}
+subtitle: Time-Series Modeling in the {tidymodels} Universe
+author: Todd Warczak
+date: '2021-05-20'
+slug: modeltime
+categories:
+   - rstats
+   - tidymodels
+   - modeltime
+   - R
+tags:
+   - rstats
+   - tidymodels
+   - modeltime
+   - time-series
+   - tidyverse
+   - R
+summary: "In my introductory blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist."
+featured: "featured-hex-modeltime.jpeg"
+image:
+   caption: ''
+   focal_point: ''
+   preview_only: true
+
+---
+
 -   [🥅 Project Goal](#goal)
 -   [🗂 Obtain Data](#data)
 -   [🛁 Clean Data](#clean)
