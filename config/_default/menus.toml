@@ -15,7 +15,7 @@ weight = 20
 
 [[main]]
 name = "Resume"
-url = "#projects"
+url = "#resume"
 weight = 100
 
 #[[main]]
