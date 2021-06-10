@@ -55,9 +55,9 @@ description = ""
 
 # Enable source code highlighting? true/false
 # Documentation: https://sourcethemes.com/academic/docs/writing-markdown-latex/#highlighting-options
-highlight = false
-#highlight_languages = ["markdown"]  # Add support for highlighting additional languages
-#highlight_style = "monokai"
+highlight = true
+highlight_languages = ["r"]  # Add support for highlighting additional languages
+highlight_style = "monokai"
 #highlight_version = "10.0.2"
 # For supported styles, see css options at https://cdnjs.com/libraries/highlight.js/
 
@@ -77,7 +77,7 @@ privacy_pack = false
 # Enable visitors to edit pages?
 #   `repo` defines the repository URL. `editable` defines which page types can be edited.
 
-edit_page = {repo_url = "https://github.com/gcushen/hugo-academic", repo_branch = "master", editable = {docs = true, page = false, post = false}}
+edit_page = {repo_url = "https://github.com/twarczak/data_warz", content_dir = "", repo_branch = "master", editable = {docs = false, page = false, post = false}}}
 
 ############################
 ## Contact details
@@ -87,7 +87,7 @@ edit_page = {repo_url = "https://github.com/gcushen/hugo-academic", repo_branch 
 ############################
 
 # Enter contact details (optional). To hide a field, clear it to "".
-email = ''
+email = 'twarczak@gmail.com'
 phone = '' #888 888 88 88
 
 # Address
@@ -122,7 +122,7 @@ contact_links = [
 
 # Default image for social sharing and search engines. Place image in `static/img/` folder and specify image name here.
 # SPC note: Saved as JPG 80 (300ppi) and ~1.7MB
-sharing_image = "lab_zoomed.jpg"
+sharing_image = "avatar.jpg"
 
 # Twitter username (without @). Used when a visitor shares your site on Twitter.
 twitter = "TWarczak"
@@ -144,7 +144,7 @@ address_format = "en-us"
 ############################
 
 # Main menu alignment (l = left, c = center, r = right) and logo options.
-main_menu = {align = "l", show_logo = true}
+main_menu = {align = "r", show_logo = true}
 
 # Show estimated reading time for posts? (true/false)
 reading_time = true
@@ -157,7 +157,7 @@ docs_section_pager = true  # Display pager in Docs layout (e.g. tutorials)?
 sharing = true
 
 # Link authors to their profile page? (true/false)
-link_authors = false
+link_authors = true
 
 # Load JS plugins
 #   E.g. To load `/assets/js/custom.js`, set `plugins_js = ["custom"]`.
