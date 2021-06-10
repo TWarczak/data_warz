@@ -20,7 +20,7 @@ bio: Doubling down with R for a career in data science. Relocating to Seattle.
 
 # Interests to show in About widget
 interests:
-- rstats
+- R for data science
 - Data Analysis
 - Modeling
 - Time-Series Forecasting
@@ -56,7 +56,7 @@ social:
   link: https://github.com/twarczak
 - icon: linkedin
   icon_pack: fab
-  link: www.linkedin.com/in/todd-warczak
+  link: https://linkedin.com/in/todd-warczak
 
 # Link to a PDF of your resume/CV.
 # To use: copy your resume to `static/uploads/resume.pdf`, enable `ai` icons in `params.toml`, 
