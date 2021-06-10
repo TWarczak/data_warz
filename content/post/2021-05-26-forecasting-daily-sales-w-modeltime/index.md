@@ -36,7 +36,7 @@ image:
 -   [🏁 Ensemble & Save Work](#ensemble)
 -   [🤔 Decisions](#decisions)
 
-## 🥅 Goal of this Project
+## 🥅 Goal of this Project {#goal}
 
 For this blog post, I use the `{modeltime}` package to forecast 3 months
 of daily sales in Q1 for a young ‘Superstore’ company selling furniture,
@@ -45,7 +45,7 @@ decisions about supply-chain orders, warehouse inventory, and if/when
 new employees are needed to meet predicted sales demand after the
 holiday season.
 
-## 🗂 Obtain Data
+## 🗂 Obtain Data {#data}
 
 The [Superstore Sales
 Dataset](https://www.kaggle.com/rohitsahoo/sales-forecasting/) on Kaggle
@@ -55,7 +55,7 @@ using a simple SARIMAX model.
 
     df <- read_csv("train.csv")
 
-## 🛁 Clean Data
+## 🛁 Clean Data {#clean}
 
     glimpse(df)
 
@@ -128,7 +128,7 @@ What period of time does this data cover?
 This is a daily dataset spanning just under 4 years from 2015-01-03 to
 2018-12-30. There are gaps though!
 
-## 🔭 Exploratory Data Analysis
+## 🔭 Exploratory Data Analysis {#explore}
 
 Let’s group by `region`/`state` to see where the ‘Superstore’ does
 business, looking at total `orders` and total `sales`.
@@ -1676,7 +1676,7 @@ variables and dummy the nominal variables.
 Even without Fourier-Series, look at all the features that may help us
 model future sales. We started with just `order_date`.
 
-## 🏗 Build Workflows
+## 🏗 Build Workflows {#build}
 
 We don’t know which algorithms will work best with our data to predict
 sales, so lets train and test a bunch of models. Building workflows
@@ -2502,7 +2502,7 @@ perform.
 Not bad. But we can tune these models for a better fit before
 forecasting.
 
-## 🔧 Hyperparameter Tuning
+## 🔧 Hyperparameter Tuning {#tune}
 
 There are two types of cross-validation we’ll need for resampling.
 K-Fold CV for models that can train on random data and Time-Series CV
@@ -2808,7 +2808,7 @@ big difference.
                                finalize_workflow(select_best(tune_results_nnetar_f_2, 'rmse')) %>% 
                                fit(training(splits))
 
-## 🏆 Forecast w/ Best Models
+## 🏆 Forecast w/ Best Models {#forecast}
 
 After lots of tuning, we have 6 models that have been tuned and fit back
 onto the training data. Now let’s evaluate their performance on the
@@ -2930,7 +2930,7 @@ of sales.
 
 ![](index_files/figure-markdown_strict/unnamed-chunk-106-1.png)
 
-## 🏁 Ensemble & Save Work
+## 🏁 Ensemble & Save Work {#ensemble}
 
 There’s plenty more we could do to improve these models, but the last
 thing I’ll show here is a quick and easy weighted model. Instead of
@@ -3032,7 +3032,7 @@ information, so they can get quite large.
 *The `.value` is our daily sales prediction for the corresponding date
 (`.index`).*
 
-## 🤔 Decisions
+## 🤔 Decisions {#decisions}
 
 Our 3-month forecast predicts a reduction in sales over January and
 February. The models then predict an increase in March sales. There’s
