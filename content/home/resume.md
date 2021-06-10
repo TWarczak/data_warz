@@ -16,7 +16,7 @@ title: ""
 subtitle: ""
 
 [design]
-  # Choose how many columns the section has. Valid values: 1 or 2.
+# Choose how many columns the section has. Valid values: 1 or 2.
   columns: "1"
 
 [design.background]
@@ -26,13 +26,13 @@ subtitle: ""
 #   Any HTML color name or Hex value is valid.
 
 # Background color.
-  # color: "navy"
+# color: "navy"
   
 # Background gradient.
-  # gradient_start: "DeepSkyBlue"
-  # gradient_end: "SkyBlue"
+# gradient_start: "DeepSkyBlue"
+# gradient_end: "SkyBlue"
   
-  # Background image.
+# Background image.
 # Name of image in `static/img/`.
   image: ""
 # Darken the image? Range 0-1 where 0 is transparent and 1 is opaque.
@@ -46,10 +46,10 @@ subtitle: ""
   padding: ["100px", "120px", "100px", "120px"]
 
 [advanced]
- # Custom CSS. 
+# Custom CSS. 
  css_style: ""
  
- # CSS class.
+# CSS class.
  css_class: ""
 ---
 
