@@ -13,10 +13,10 @@ name = "Blog"
 url = "#posts"
 weight = 20
 
-#[[main]]
-#name = "Projects"
-#url = "#projects"
-#weight = 30
+[[main]]
+name = "Resume"
+url = "#projects"
+weight = 100
 
 #[[main]]
 #name = "Talks"
