@@ -17,7 +17,7 @@ subtitle: ""
 
 [design]
 # Choose how many columns the section has. Valid values: 1 or 2.
-  columns: "1"
+columns: "1"
 
 [design.background]
 # Apply a background color, gradient, or image.
@@ -34,23 +34,23 @@ subtitle: ""
   
 # Background image.
 # Name of image in `static/img/`.
-  image: ""
+image: ""
 # Darken the image? Range 0-1 where 0 is transparent and 1 is opaque.
-  image_darken: 0.6
+image_darken: 0.6
 
 # Text color (true=light or false=dark).
-  text_color_light: false
+text_color_light: false
 
 [design.spacing]
 # Customize the section spacing. Order is top, right, bottom, left.
-  padding: ["100px", "120px", "100px", "120px"]
+padding: ["100px", "120px", "100px", "120px"]
 
 [advanced]
 # Custom CSS. 
- css_style: ""
+css_style: ""
  
 # CSS class.
- css_class: ""
+css_class: ""
 ---
 
 # Todd Warczak PhD
