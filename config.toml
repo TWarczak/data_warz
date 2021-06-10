@@ -22,26 +22,46 @@ anchor = "smart"
 quality = 90
 resampleFilter = "lanczos"
 
+
+
+
+
 [markup]
 defaultMarkdownHandler = "goldmark"
-[markup.goldmark]
-[markup.goldmark.renderer]
-unsafe = true
-[markup.highlight]
-anchorLineNos = false
-codeFences = true
-guessSyntax = false
-hl_Lines = ""
-lineAnchors = ""
-lineNoStart = 1
-lineNos = false
-lineNumbersInTable = true
-noClasses = true
-style = "monokai"
-tabWidth = 3
-[markup.tableOfContents]
-endLevel = 3
-startLevel = 2
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = false
+      hardWraps = false
+      xhtml = false
+  [markup.highlight]
+    anchorLineNos = false
+    codeFences = false
+    guessSyntax = true
+    hl_Lines = ""
+    lineAnchors = ""
+    lineNoStart = 1
+    lineNos = false
+    lineNumbersInTable = false
+    noClasses = true
+    style = "atom-one-dark-reasonable"
+    tabWidth = 3
+  [markup.tableOfContents]
+    endLevel = 3
+    startLevel = 2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 [module]
 

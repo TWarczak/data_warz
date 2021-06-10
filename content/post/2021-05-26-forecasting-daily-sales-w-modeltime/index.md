@@ -190,16 +190,19 @@ Lets also look at number of `orders` and `sales` grouped by
                        values_to = 'percent')
 
     outlier_furniture_consumer <- x %>% filter(segment  == 'Consumer',
-                                                category == "Furniture") %>%
-                                         arrange(desc(orders)) %>% head()
+                                               category == "Furniture") %>%
+                                        arrange(desc(orders)) %>% head()
 
     outlier_technology_corporate_homeoffice <- x %>%
-                                               filter(segment  == 'Corporate' | segment == "Home Office",
-                                                      category == "Technology") %>%
-                                               arrange(desc(log_sales)) %>% head()
+                                filter(segment  == 'Corporate' | segment == "Home Office",
+                                       category == "Technology") %>%
+                                arrange(desc(log_sales)) %>% head()
+    
     # Make specific tbl for outlier Seth Vernon so label doesn't appear in other facets
-    seth_vernon <- data.frame(category = factor("Furniture", levels = c("Furniture","Office Supplies","Technology")),
-                              segment  = factor("Consumer", levels = c("Consumer","Corporate","Home Office")))
+    seth_vernon <- data.frame(category = factor("Furniture", 
+                                         levels = c("Furniture","Office Supplies","Technology")),
+                              segment  = factor("Consumer", 
+                                         levels = c("Consumer","Corporate","Home Office")))
 
     ggplot(x, aes(log(sales), orders, color = category)) +
        geom_jitter(aes(shape = segment),
@@ -235,7 +238,7 @@ orders are for office supplies, but their largest sales are for
 technology; not surprising. They have a some loyal customers too, like
 Seth Vernon.
 
-## 🧮 Prep Data for Forecasting
+## 🧮 Prep Data for Forecasting {#prep}
 
 Now lets focus on sales within this time-series. If we want to forecast
 sales, we can’t use any other variable but `order_date`. After
@@ -456,7 +459,8 @@ look at the lag and rolling lags data.
                       lag_sales_trans_lag84_roll_30,
                       lag_sales_trans_lag84_roll_60,
                       lag_sales_trans_lag84_roll_90)) %>%
-       plot_time_series(order_date, value, name, .interactive = FALSE, .smooth = FALSE, .title = "30d, 60d, 90d Rolling Lags") +
+       plot_time_series(order_date, value, name, .interactive = FALSE, 
+                        .smooth = FALSE, .title = "30d, 60d, 90d Rolling Lags") +
        theme_dark_grey() +
        scale_color_manual(values = c("#cccccc","#db0000", "#0099ff", "#00ff99", "#ffffcc"))
 

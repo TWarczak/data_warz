@@ -86,7 +86,7 @@ a {
   border-color: $spc-primary;
 }
 .article-container {
-  max-width: 1050px;
+  max-width: 800px;
   padding: 0 20px 0 20px;
   margin: 0 auto 0 auto;
 }
@@ -111,7 +111,7 @@ a {
 .navbar {
   font-weight: 700;                         // weight for navbar text
   box-shadow: none;
-  text-transform: uppercase;
+  text-transform: lowercase;
   letter-spacing: .08em;                    // horizontal padding
   padding: 0 2em;
   .navbar-nav {
@@ -220,7 +220,7 @@ ul.ul-edu li {
     p {                          // section subtitle
       margin-top: 0;
       margin-bottom: 1rem;
-      text-transform: uppercase;
+      text-transform: lowercase;
       letter-spacing: .08em;
     }
   }
@@ -452,10 +452,10 @@ iframe {
 // Page builder: _widgets.scss
 .dark {
   .home-section:nth-of-type(odd) {
-    background-color: mix($spc-00dp, white, 98%); // odd sections: about, recent pubs, contact
+    background-color: mix($spc-00dp, white, 98%); // odd sections
   }
   .home-section:nth-of-type(even) {
-    background-color: $spc-00dp;   // even sections: experience, recent posts
+    background-color: $spc-00dp;   // even sections
   }
 }
 
@@ -464,7 +464,7 @@ body.dark {
   .docs-toc-link,
   .docs-sidebar .nav > li:not(.active) > a,
   .modal button.close {
-    color: #a90533; //$spc-text-medium;           // text of search field and summary text
+    color: $spc-text-medium;      // text of search field and summary text
     border-radius: .5rem;
     border-color: $spc-bkg-light-std;
     border: 0px solid;
@@ -498,14 +498,15 @@ body.dark {
 // ************************************************
 
 .dark .navbar {
-  font-weight: 700;                              // weight for navbar text
+  font-weight: 1000;    // weight for navbar text
+  font-size: 18px;
   background: mix($spc-bkg-light-std, $spc-bkg-dark-std, 95);    // background for entire navbar
   box-shadow: none;
-  text-transform: uppercase;
+  text-transform: lowercase;
   letter-spacing: .08em;                         // horizontal padding
   padding: 0 2rem;
   .navbar-nav {
-    display: flex;
+    display: block; // doesn't seem to matter
     .nav-link {
       color: rgba($spc-bkg-dark-std, .90) !important;
       &:focus,
@@ -520,7 +521,7 @@ body.dark {
       z-index: 1032;                             // I18n dropdown over mobile expanded menu.
       .dropdown-item {
         background-color: mix($spc-00dp, white, 98%) !important; // theme dropdown background
-        font-weight: 700;                        // sets weight for text in theme selection dropdown
+        font-weight: 900;                        // sets weight for text in theme selection dropdown
       }
     }
   }
@@ -535,7 +536,7 @@ body.dark {
     &:hover,
     &:active {
       font-weight: 700;
-      color: #3772ff !important; //$spc-secondary-dark !important;   // text color of name when hovering
+      color: #3772ff !important;  // text color of name when hovering
     }
   }
   .navbar-toggler {
@@ -544,7 +545,7 @@ body.dark {
     &:focus,
     &:hover,
     &:active {
-      color: #3772ff; //$spc-secondary-dark;              // color of toggle menu
+      color: #3772ff;       // color of toggle menu
     }
   }
   .navbar-collapse {                           // navbar collapsible dropdown menu
@@ -577,21 +578,29 @@ body.dark {
 
 .dark {
   code {
-    color: rgb(139, 233, 253); //#d6d8b0; //$spc-secondary;  //#dddddd;    // inline and code block text
-    background: #242423; //#212529; //$spc-04dp;
-    font-size: 0.8em;
-  }
+    color: rgb(139, 233, 253);    // inline and code block text
+    background: none;
+    font-size: 0.75em;
+    word-wrap: break-word; }
+    a > code {
+      color: inherit; }
+
   pre {
-    border: #474448; //0px solid $spc-01dp;                 // code block border
-    box-shadow: 0px 0px 0px $spc-bkg-dark;       // code block shadow (values: h-shift v-shift intensity)
-    padding: 0.25em;
-    background: #474448; //#242423; //#474448; //$spc-01dp;                       // code block backround
-    overflow-x: auto;
-    border-radius: 0px;                          // corner rounding
+    border: 1px solid #8a817c; // code block border
+    box-shadow: 1px 1px 1px $spc-bkg-dark; // code block shadow (values: h-shift v-shift intensity)
+    padding: 0.5em;
+    background: #474448;     // code block backround
+    overflow-x: hidden;
+    border-radius: 5px;      // corner rounding
+    word-wrap:  normal;
+    word-break: normal;
+    white-space: pre-wrap;
   }
   pre code {
     background: none;
-    font-size: 0.8rem;
+    font-size: 0.6rem; // code size inside the code chunks
+    color: #dddddd;  // specify color of code inside chunk.  Overwrites code {color:}
+    white-space: pre-wrap;
   }
   .hljs {
   	background-color: #474448; //#242423; //$spc-02dp;     // code block text background
@@ -678,18 +687,18 @@ body.dark {
 .dark {
   .btn { // Buttons for "send" button in the contact section
   color: $spc-primary-dark;                   // text
-  border-color: #3772ff; //$spc-secondary-dark;            // border
-  background-color: #3772ff; //$spc-secondary-dark;                 // button background
+  border-color: #3772ff; //$spc-secondary-dark;        // border
+  background-color: #3772ff; //$spc-secondary-dark;    // button background
     &:hover {
       color: $spc-primary-dark;              // text when hovering
-      border-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);          // border color when hovering
-      background-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);      // button background when hovering
+      border-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);      // border color when hovering
+      background-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);  // button background when hovering
     }
   }
   .btn-links .btn { // Buttons for in-post document links
     color: $spc-primary-dark;                   // text
-    border-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);            // border
-    background-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);                 // button background
+    border-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);       // border
+    background-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 90);   // button background
     &:hover {
       color: $spc-primary-dark !important;    // text when hovering
       border-color: #3772ff; //$spc-secondary-dark;           // border when hovering
@@ -744,4 +753,17 @@ body.dark {
       border: #3772ff; //$spc-secondary-dark;
     }
   }
+}
+/* audiowide-regular - latin */
+@font-face {
+  font-family: 'Audiowide';
+  font-style: normal;
+  font-weight: 400;
+  src: url('../fonts/audiowide-v9-latin-regular.eot'); /* IE9 Compat Modes */
+  src: local(''),
+       url('../fonts/audiowide-v9-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
+       url('../fonts/audiowide-v9-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
+       url('../fonts/audiowide-v9-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('../fonts/audiowide-v9-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
+       url('../fonts/audiowide-v9-latin-regular.svg#Audiowide') format('svg'); /* Legacy iOS */
 }

@@ -133,6 +133,7 @@ data_clean_tbl <- janitor::clean_names(df) %>%
                   mutate(order_date = lubridate::dmy(order_date),
                          across(customer_id:product_name, .fns = as.factor)) %>% 
                   select(-c(ship_date, country, order_id, ship_mode))
+
 glimpse(data_clean_tbl)
 ```
 
@@ -140,9 +141,11 @@ What period of time does this data cover?
 ```{r}
 t <- summarise_by_time(.data     = data_clean_tbl,
                        .date_var = order_date)
+
 (diff_t <- difftime(last(t$order_date),
                     first(t$order_date),
                     units = 'weeks'))
+
 lubridate::dweeks(208.1429)
 ```
 
@@ -218,35 +221,26 @@ Lets also look at number of `orders` and `sales` grouped by `customer_name`, `ca
 ```{r, cache=TRUE}
 # Want to identify any outlier customers, and see if any category/segment of their business dominates
 x <- data_clean_tbl %>%
-      group_by(customer_name, category, segment) %>%
-      summarise(sales  = sum(sales),
+     group_by(customer_name, category, segment) %>%
+     summarise(sales  = sum(sales),
                 orders = n()) %>%
-      mutate(log_sales = log(sales))
+     mutate(log_sales = log(sales))
 
-z <- data_clean_tbl %>%
-      group_by(category, segment) %>%
-      summarise(sales  = sum(sales),
-                orders = n()) %>%
-      ungroup() %>%
-      mutate(orders_pct      = round(prop.table(orders) * 100),
-             sales_pct       = round(prop.table(sales) * 100),
-             sales_per_order = round(sales/orders)) %>%
-      pivot_longer(orders_pct:sales_pct,
-                   names_to  = 'metric',
-                   values_to = 'percent')
+# outlier_seth_vernon
+x %>% filter(segment  == 'Consumer',
+             category == "Furniture") %>%
+      arrange(desc(orders)) %>% head()
 
-outlier_furniture_consumer <- x %>% filter(segment  == 'Consumer',
-                                           category == "Furniture") %>%
-                                    arrange(desc(orders)) %>% head()
-
-outlier_technology_corporate_homeoffice <- x %>%
-                                           filter(segment  == 'Corporate' | segment == "Home Office",
-                                                  category == "Technology") %>%
-                                           arrange(desc(log_sales)) %>% head()
+# outlier_2 
+x %>% filter(segment  == 'Corporate' | segment == "Home Office",
+             category == "Technology") %>%
+      arrange(desc(log_sales)) %>% head()
 
 # Make specific tbl for outlier Seth Vernon so label doesn't appear in other facets
-seth_vernon <- data.frame(category = factor("Furniture", levels = c("Furniture","Office Supplies","Technology")), 
-                          segment  = factor("Consumer", levels = c("Consumer","Corporate","Home Office")))
+seth_vernon <- data.frame(category = factor("Furniture", 
+                                            levels = c("Furniture","Office Supplies","Technology")), 
+                          segment  = factor("Consumer", 
+                                            levels = c("Consumer","Corporate","Home Office")))
 
 ```
 
@@ -430,7 +424,8 @@ full_data_prepared_tbl %>%
                   lag_sales_trans_lag84_roll_30,
                   lag_sales_trans_lag84_roll_60,
                   lag_sales_trans_lag84_roll_90)) %>%
-   plot_time_series(order_date, value, name, .interactive = FALSE, .smooth = FALSE, .title = "30d, 60d, 90d Rolling Lags") +
+   plot_time_series(order_date, value, name, .interactive = FALSE, 
+                    .smooth = FALSE, .title = "30d, 60d, 90d Rolling Lags") +
    theme_dark_grey() +
    scale_color_manual(values = c("#cccccc","#db0000", "#0099ff", "#00ff99", "#ffffcc"))
 ```
