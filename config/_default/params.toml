@@ -18,7 +18,7 @@ day_night = false
 #   Latest font sets (may require updating): https://sourcethemes.com/academic/themes/
 #   Browse built-in font sets in `themes/academic/data/fonts/`
 #   Browse user installed font sets in `data/fonts/`
-font = "data_warz"
+font = "data"
 
 # Choose a font size.
 # Sizes: XS (extra small), S (small), M (medium), L (large - DEFAULT), XL (extra large)
@@ -57,7 +57,7 @@ description = ""
 # Documentation: https://sourcethemes.com/academic/docs/writing-markdown-latex/#highlighting-options
 highlight = true
 highlight_languages = ["r"]  # Add support for highlighting additional languages
-highlight_style = "atom-one-dark-reasonable"
+highlight_style = "monokailight" #"rainbow" #paraiso-dark"  #"atom-one-dark-reasonable"
 #highlight_version = "10.0.2"
 # For supported styles, see css options at https://cdnjs.com/libraries/highlight.js/
 

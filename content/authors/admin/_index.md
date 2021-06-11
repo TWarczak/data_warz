@@ -6,8 +6,8 @@ title: Todd Warczak PhD
 superuser: true
 
 # Role/position/tagline
-role: <i class="fas fa-seedling" style="color:#3e8914"></i></a>
-      Molecular & Cellular Biologist /<br/> 
+role: <i class="fas fa-seedling" style="color:#3e8914"></i>
+      Molecular & Cellular Biologist /<br>
       <i class="fas fa-laptop-code" style="color:#bfb7b6"></i> Data Scientist
 
 # Organizations/Affiliations to show in About widget

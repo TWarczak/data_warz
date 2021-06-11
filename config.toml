@@ -15,6 +15,8 @@ summaryLength = 30
 timeout = 600000
 title = "data warz"
 theme = "hugo-academic"
+pygmentsCodeFences = true
+pygmentsUseClasses = true
 
 
 [imaging]
@@ -22,45 +24,30 @@ anchor = "smart"
 quality = 90
 resampleFilter = "lanczos"
 
-
-
-
-
 [markup]
 defaultMarkdownHandler = "goldmark"
   [markup.goldmark]
     [markup.goldmark.renderer]
-      unsafe = false
+      unsafe = true # set to false and fas fa icons don't work in about
       hardWraps = false
       xhtml = false
   [markup.highlight]
     anchorLineNos = false
     codeFences = false
-    guessSyntax = true
+    guessSyntax = false
     hl_Lines = ""
     lineAnchors = ""
     lineNoStart = 1
     lineNos = false
     lineNumbersInTable = false
     noClasses = true
-    style = "atom-one-dark-reasonable"
+    style = "monokai"  # set this is params.toml
     tabWidth = 3
+
+
   [markup.tableOfContents]
     endLevel = 3
     startLevel = 2
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 [module]

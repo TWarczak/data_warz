@@ -86,7 +86,7 @@ a {
   border-color: $spc-primary;
 }
 .article-container {
-  max-width: 800px;
+  max-width: 850px;
   padding: 0 20px 0 20px;
   margin: 0 auto 0 auto;
 }
@@ -296,7 +296,7 @@ background: white;                        // text background for experience card
 
 div.alert-note > div:first-child::before {
   font-family: 'Font Awesome 5 Free';
-  font-weight: 900;
+  font-weight: 700;
   color: $spc-primary;
   content: "\f00c"; // check mark icon
 }
@@ -313,12 +313,12 @@ div.alert-note > div:first-child::before {
 }
 
 div.alert > div {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
 }
 
 div.alert-warning > div:first-child::before {
   font-family: 'Font Awesome 5 Free';
-  font-weight: 900;
+  font-weight: 700;
   color: #a90533;
   content: "\f12a"; // exclamation point icon
 }
@@ -598,7 +598,7 @@ body.dark {
   }
   pre code {
     background: none;
-    font-size: 0.6rem; // code size inside the code chunks
+    font-size: 0.65rem; // code size inside the code chunks
     color: #dddddd;  // specify color of code inside chunk.  Overwrites code {color:}
     white-space: pre-wrap;
   }
@@ -606,12 +606,14 @@ body.dark {
   	background-color: #474448; //#242423; //$spc-02dp;     // code block text background
   }
 }
-
+figure img {
+  height: auto;
+  max-width: 100%; }
 // SHORTCODE
 // icon
 .dark div.alert-note > div:first-child::before {
   font-family: 'Font Awesome 5 Free';
-  font-weight: 900;
+  font-weight: 400;
   color: #3772ff; //$spc-secondary-dark;
   content: "\f00c"; // check mark icon
 }
@@ -627,30 +629,90 @@ body.dark {
   padding: 23px 10px 21px 10px;
 }
 
+.dark .alert pre, .dark .article-style aside pre, .article-style .dark aside pre,
+.dark .alert code,
+.dark .article-style aside code,
+.article-style .dark aside code {
+  color: initial;
+  background-color: initial; }
+
 // ************************************************
 // MARKUP
 // ************************************************
 // Not all currently being used
 .dark {
-  .markup-quote {
-  background-image: linear-gradient(to bottom, rgba(233, 231, 245, 0.2), rgba(233, 231, 245, 0.2));
-  }
-  #MathJax_Zoom {
-  background-color: rgb(68, 71, 90) !important;
-  }
-  table table {
-    background-color: rgb(40, 42, 54);
-  }
-  table > tbody > tr:nth-child(odd) > td,         // table striped rows
-  table > tbody > tr:nth-child(odd) > th {
-    background-color: $spc-bkg-dark;              // text background for odd table rows
-  }
-  table > tbody > tr:hover > td,                  // row hover
-  table > tbody > tr:hover > th {
-    background-color: mix($spc-00dp, white, 98);  // text background for odd table rows when hovering
-  }
-}
+//  .markup-quote {
+//  background-image: linear-gradient(to bottom, rgba(233, 231, 245, 0.2), rgba(233, 231, 245, 0.2));
+//  }
+//  #MathJax_Zoom {
+//  background-color: rgb(68, 71, 90) !important;
+//}
+//  table table {
+//    background-color: rgb(40, 42, 54);
+//  }
+//  table > tbody > tr:nth-child(odd) > td,         // table striped rows
+//  table > tbody > tr:nth-child(odd) > th {
+//    background-color: $spc-bkg-dark;              // text background for odd table rows
+//  }
+//  table > tbody > tr:hover > td,                  // row hover
+//  table > tbody > tr:hover > th {
+//    background-color: mix($spc-00dp, white, 98);  // text background for odd table rows when hovering
+//  }
+//}
+    table {
+        display: contents; // contents;  //block;
+        width: 100%;
+        overflow-x: scroll;
+        margin-bottom: 10rem;
+        font-size: 0.6rem;
+        overflow-wrap: normal;
+        word-wrap: normal;
+        word-break: normal;
+      }
 
+    table > thead > tr > th,
+    table > tbody > tr > th,
+    table > tfoot > tr > th,
+    table > thead > tr > td,
+    table > tbody > tr > td,
+    table > tfoot > tr > td {
+      padding: 3px;
+      line-height: 0.8;
+      vertical-align: top;
+      border-top: 1px solid #ddd; }
+
+  //  table > thead > tr > th {
+  //    vertical-align: bottom;
+  //    border-bottom: 3px solid #ddd; }
+
+  //  table > caption + thead > tr:first-child > th,
+  //  table > colgroup + thead > tr:first-child > th,
+  //  table > thead:first-child > tr:first-child > th,
+  //  table > caption + thead > tr:first-child > td,
+  //  table > colgroup + thead > tr:first-child > td,
+  //  table > thead:first-child > tr:first-child > td {
+  //    border-top: 1; }
+
+    //table > tbody + tbody {
+    //  border-top: 2px solid #05668d; }
+
+    //table table {
+    //  background-color: #474448; }
+
+/* Table Striped */
+  table > tbody > tr:nth-child(odd) > td,
+  table > tbody > tr:nth-child(odd) > th {
+  background-color: #5C5551; }
+  table > tbody > tr:nth-child(even) > td,
+  table > tbody > tr:nth-child(even) > th {
+  background-color: #463f3a; }
+
+
+/* Table Hover */
+  table > tbody > tr:hover > td,
+  table > tbody > tr:hover > th {
+  background-color: #05668d; }
+}
 // ************************************************
 // CARDS
 // ************************************************

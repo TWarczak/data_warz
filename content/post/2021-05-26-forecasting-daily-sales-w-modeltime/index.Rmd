@@ -447,7 +447,8 @@ forecast_tbl <- full_data_prepared_tbl %>%
 skimr::skim_without_charts(forecast_tbl)
 ```
 
-The `forecast_tbl` has 84 rows, 37 columns for 84 future dates starting 2018-12-31 and ending 2019-03-24. Rows are only missing `sales_trans` data. Good to go.  
+
+The `forecast_tbl` has 37 columns and 84 rows for future dates starting 2018-12-31 and ending 2019-03-24. Rows are only missing `sales_trans` data. Good to go.  
 
 
 ###  Training/Testing Data
@@ -461,7 +462,7 @@ data_prepared_tbl <- full_data_prepared_tbl %>%
 skimr::skim_without_charts(data_prepared_tbl)
 ```
 
-1374 rows, 37 columns, no missing data. Dates now range from 2015-03-28 to 2018-12-30.  Good to go.  
+37 columns, 1374 rows, no missing data. Dates now range from 2015-03-28 to 2018-12-30.  Good to go.  
 
 I decided to split training/testing so we're testing on the last 84 days, the same amount of days in our `forecast_tbl`. Could have split differently. Cross-Validation for sequential models need to be ordered, so making the testing set too big limits the benefit of time-series cross-validation. That'll make sense soon.   
 ```{r}
@@ -1014,7 +1015,7 @@ tune_results_svm %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 1**
-```{r, fig.width = 8, fig.height = 6, results='hide'}
+```{r, out.width='50%', results='hide'}
  tune_results_svm %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1048,7 +1049,7 @@ tune_results_svm_2 %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 2**
-```{r, fig.width = 8, fig.height = 6, results='hide'}
+```{r, out.width='50%',  results='hide'}
  tune_results_svm_2 %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1355,7 +1356,7 @@ tune_results_nnetar_f %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 1**
-```{r, fig.width = 14, fig.height = 6}
+```{r, out.width='100%' }
  tune_results_nnetar_f %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1389,7 +1390,7 @@ tune_results_nnetar_f_2 %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 2**
-```{r, fig.width = 8, fig.height = 6}
+```{r, out.width='50%'}
 tune_results_nnetar_f_2 %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
