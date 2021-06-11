@@ -7,7 +7,7 @@ google_fonts = ""
 # Font families
 heading_font = "Lora"
 body_font = "Fira Sans"
-nav_font = "Gurajada"
+nav_font = "Marko One"
 mono_font = "Roboto Mono"
 
 # Font size

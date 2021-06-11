@@ -109,7 +109,7 @@ a {
 // ************************************************
 
 .navbar {
-  font-weight: 700;                         // weight for navbar text
+  font-weight: 500;                         // weight for navbar text
   box-shadow: none;
   text-transform: lowercase;
   letter-spacing: .08em;                    // horizontal padding
@@ -499,7 +499,7 @@ body.dark {
 
 .dark .navbar {
   font-weight: 1000;    // weight for navbar text
-  font-size: 18px;
+  font-size: 30px;
   background: mix($spc-bkg-light-std, $spc-bkg-dark-std, 95);    // background for entire navbar
   box-shadow: none;
   text-transform: lowercase;
@@ -549,7 +549,7 @@ body.dark {
     }
   }
   .navbar-collapse {                           // navbar collapsible dropdown menu
-    background-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 95);
+    background-color: mix($spc-bkg-light-std, $spc-bkg-dark-std, 95); //
   }
 }
 
@@ -781,4 +781,13 @@ body.dark {
   src: local(''),
        url('/fonts/gurajada-v10-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
        url('/fonts/gurajada-v10-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* marko-one-regular - latin */
+@font-face {
+  font-family: 'Marko One';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''),
+       url('/fonts/marko-one-v12-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('/fonts/marko-one-v12-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
