@@ -498,8 +498,8 @@ body.dark {
 // ************************************************
 
 .dark .navbar {
-  font-weight: 1000;    // weight for navbar text
-  font-size: 30px;
+  font-weight: 900;    // weight for navbar text
+  font-size: 20px;
   background: mix($spc-bkg-light-std, $spc-bkg-dark-std, 95);    // background for entire navbar
   box-shadow: none;
   text-transform: lowercase;
@@ -790,4 +790,22 @@ body.dark {
   src: local(''),
        url('/fonts/marko-one-v12-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
        url('/fonts/marko-one-v12-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lora-regular - latin */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  src: local(''),
+       url('/fonts/lora-v17-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('/fonts/lora-v17-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+/* lora-700 - latin */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  src: local(''),
+       url('/fonts/lora-v17-latin-700.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('/fonts/lora-v17-latin-700.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
