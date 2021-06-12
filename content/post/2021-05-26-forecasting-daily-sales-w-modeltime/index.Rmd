@@ -1356,7 +1356,7 @@ tune_results_nnetar_f %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 1**
-```{r, out.width='100%' }
+```{r, out.width='70%' }
  tune_results_nnetar_f %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +

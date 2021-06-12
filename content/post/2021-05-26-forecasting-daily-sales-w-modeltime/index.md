@@ -22,7 +22,6 @@ image:
    caption: ''
    focal_point: ''
    preview_only: true
-
 ---
 
 -   [🥅 Project Goal](#goal)
@@ -92,29 +91,31 @@ remove what we definitely don’t need.
                       mutate(order_date = lubridate::dmy(order_date),
                              across(customer_id:product_name, .fns = as.factor)) %>% 
                       select(-c(ship_date, country, order_id, ship_mode))
+
     glimpse(data_clean_tbl)
 
     ## Rows: 9,800
     ## Columns: 14
-    ## $ row_id        <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,…
-    ## $ order_date    <date> 2017-11-08, 2017-11-08, 2017-06-12, 2016-10-11, 2…
-    ## $ customer_id   <fct> CG-12520, CG-12520, DV-13045, SO-20335, SO-20335, …
-    ## $ customer_name <fct> Claire Gute, Claire Gute, Darrin Van Huff, Sean O'…
-    ## $ segment       <fct> Consumer, Consumer, Corporate, Consumer, Consumer,…
-    ## $ city          <fct> Henderson, Henderson, Los Angeles, Fort Lauderdale…
-    ## $ state         <fct> Kentucky, Kentucky, California, Florida, Florida, …
-    ## $ postal_code   <fct> 42420, 42420, 90036, 33311, 33311, 90032, 90032, 9…
-    ## $ region        <fct> South, South, West, South, South, West, West, West…
-    ## $ product_id    <fct> FUR-BO-10001798, FUR-CH-10000454, OFF-LA-10000240,…
-    ## $ category      <fct> Furniture, Furniture, Office Supplies, Furniture, …
-    ## $ sub_category  <fct> Bookcases, Chairs, Labels, Tables, Storage, Furnis…
-    ## $ product_name  <fct> "Bush Somerset Collection Bookcase", "Hon Deluxe F…
-    ## $ sales         <dbl> 261.9600, 731.9400, 14.6200, 957.5775, 22.3680, 48…
+    ## $ row_id        <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21…
+    ## $ order_date    <date> 2017-11-08, 2017-11-08, 2017-06-12, 2016-10-11, 2016-10-11, 2015-06-09, …
+    ## $ customer_id   <fct> CG-12520, CG-12520, DV-13045, SO-20335, SO-20335, BH-11710, BH-11710, BH-…
+    ## $ customer_name <fct> Claire Gute, Claire Gute, Darrin Van Huff, Sean O'Donnell, Sean O'Donnell…
+    ## $ segment       <fct> Consumer, Consumer, Corporate, Consumer, Consumer, Consumer, Consumer, Co…
+    ## $ city          <fct> Henderson, Henderson, Los Angeles, Fort Lauderdale, Fort Lauderdale, Los …
+    ## $ state         <fct> Kentucky, Kentucky, California, Florida, Florida, California, California,…
+    ## $ postal_code   <fct> 42420, 42420, 90036, 33311, 33311, 90032, 90032, 90032, 90032, 90032, 900…
+    ## $ region        <fct> South, South, West, South, South, West, West, West, West, West, West, Wes…
+    ## $ product_id    <fct> FUR-BO-10001798, FUR-CH-10000454, OFF-LA-10000240, FUR-TA-10000577, OFF-S…
+    ## $ category      <fct> Furniture, Furniture, Office Supplies, Furniture, Office Supplies, Furnit…
+    ## $ sub_category  <fct> Bookcases, Chairs, Labels, Tables, Storage, Furnishings, Art, Phones, Bin…
+    ## $ product_name  <fct> "Bush Somerset Collection Bookcase", "Hon Deluxe Fabric Upholstered Stack…
+    ## $ sales         <dbl> 261.9600, 731.9400, 14.6200, 957.5775, 22.3680, 48.8600, 7.2800, 907.1520…
 
 What period of time does this data cover?
 
     t <- summarise_by_time(.data     = data_clean_tbl,
                            .date_var = order_date)
+
     (diff_t <- difftime(last(t$order_date),
                         first(t$order_date),
                         units = 'weeks'))
@@ -172,37 +173,48 @@ Lets also look at number of `orders` and `sales` grouped by
 
     # Want to identify any outlier customers, and see if any category/segment of their business dominates
     x <- data_clean_tbl %>%
-          group_by(customer_name, category, segment) %>%
-          summarise(sales  = sum(sales),
+         group_by(customer_name, category, segment) %>%
+         summarise(sales  = sum(sales),
                     orders = n()) %>%
-          mutate(log_sales = log(sales))
+         mutate(log_sales = log(sales))
 
-    z <- data_clean_tbl %>%
-          group_by(category, segment) %>%
-          summarise(sales  = sum(sales),
-                    orders = n()) %>%
-          ungroup() %>%
-          mutate(orders_pct      = round(prop.table(orders) * 100),
-                 sales_pct       = round(prop.table(sales) * 100),
-                 sales_per_order = round(sales/orders)) %>%
-          pivot_longer(orders_pct:sales_pct,
-                       names_to  = 'metric',
-                       values_to = 'percent')
+    # outlier_seth_vernon
+    x %>% filter(segment  == 'Consumer',
+                 category == "Furniture") %>%
+          arrange(desc(orders)) %>% head()
 
-    outlier_furniture_consumer <- x %>% filter(segment  == 'Consumer',
-                                               category == "Furniture") %>%
-                                        arrange(desc(orders)) %>% head()
+    ## # A tibble: 6 x 6
+    ## # Groups:   customer_name, category [6]
+    ##   customer_name   category  segment  sales orders log_sales
+    ##   <fct>           <fct>     <fct>    <dbl>  <int>     <dbl>
+    ## 1 Seth Vernon     Furniture Consumer 8332.     15      9.03
+    ## 2 Caroline Jumper Furniture Consumer 6267.      9      8.74
+    ## 3 Joel Eaton      Furniture Consumer 4423.      9      8.39
+    ## 4 Lena Creighton  Furniture Consumer 2641.      9      7.88
+    ## 5 Anna Andreadi   Furniture Consumer 3751.      8      8.23
+    ## 6 Anne McFarland  Furniture Consumer 3557.      8      8.18
 
-    outlier_technology_corporate_homeoffice <- x %>%
-                                filter(segment  == 'Corporate' | segment == "Home Office",
-                                       category == "Technology") %>%
-                                arrange(desc(log_sales)) %>% head()
-    
+    # outlier_2 
+    x %>% filter(segment  == 'Corporate' | segment == "Home Office",
+                 category == "Technology") %>%
+          arrange(desc(log_sales)) %>% head()
+
+    ## # A tibble: 6 x 6
+    ## # Groups:   customer_name, category [6]
+    ##   customer_name  category   segment      sales orders log_sales
+    ##   <fct>          <fct>      <fct>        <dbl>  <int>     <dbl>
+    ## 1 Sean Miller    Technology Home Office 23482.      3     10.1 
+    ## 2 Tamara Chand   Technology Corporate   17998.      2      9.80
+    ## 3 Tom Ashbrook   Technology Home Office 13710.      4      9.53
+    ## 4 Bill Shonely   Technology Corporate    9107.      2      9.12
+    ## 5 Todd Sumrall   Technology Corporate    8804.      4      9.08
+    ## 6 Grant Thornton Technology Corporate    8000.      1      8.99
+
     # Make specific tbl for outlier Seth Vernon so label doesn't appear in other facets
     seth_vernon <- data.frame(category = factor("Furniture", 
-                                         levels = c("Furniture","Office Supplies","Technology")),
+                                                levels = c("Furniture","Office Supplies","Technology")), 
                               segment  = factor("Consumer", 
-                                         levels = c("Consumer","Corporate","Home Office")))
+                                                levels = c("Consumer","Corporate","Home Office")))
 
     ggplot(x, aes(log(sales), orders, color = category)) +
        geom_jitter(aes(shape = segment),
@@ -339,9 +351,9 @@ Let’s look at our new padded & transformed time-series.
 We might want to add lags, rolling lags, and/or fourier-series features
 that could help our forecast. This is way to add features to regress on
 for the future dates we want to forecast. Currently future forecast
-dates have only order\_date to predict with.
+dates have only `order_date` to predict with.
 
-Let’s look at ACF/PACF plots to see if any periods look usable.  
+Let’s look at ACF/PACF plots to see if any periods look usable.
 
 ### ACF/PACF
 
@@ -1009,7 +1021,7 @@ Data summary
 </tbody>
 </table>
 
-The `forecast_tbl` has 84 rows, 37 columns for 84 future dates starting
+The `forecast_tbl` has 37 columns and 84 rows for future dates starting
 2018-12-31 and ending 2019-03-24. Rows are only missing `sales_trans`
 data. Good to go.
 
@@ -1548,7 +1560,7 @@ Data summary
 </tbody>
 </table>
 
-1374 rows, 37 columns, no missing data. Dates now range from 2015-03-28
+37 columns, 1374 rows, no missing data. Dates now range from 2015-03-28
 to 2018-12-30. Good to go.
 
 I decided to split training/testing so we’re testing on the last 84
@@ -1722,7 +1734,7 @@ Ok, lets build!
 
 ### ARIMA BOOST
 
-Keep `order_date` feature
+*Keep `order_date` feature*
 
     wflw_fit_arimaboost <- workflow() %>%
        add_model(spec = arima_boost() %>% set_engine('auto_arima_xgboost')) %>%
@@ -1736,7 +1748,7 @@ Keep `order_date` feature
 
 ### PROPHET
 
-Keep `order_date` feature
+*Keep `order_date` feature*
 
     wflw_fit_prophet <- workflow() %>%
        add_model(spec = prophet_reg() %>% set_engine('prophet')) %>%
@@ -1750,7 +1762,7 @@ Keep `order_date` feature
 
 ### XGBOOST
 
-Set `order_date` to ‘indicator’
+*Set `order_date` to ‘indicator’*
 
     wflw_fit_xgboost <- workflow() %>%
        add_model(spec = boost_tree(mode = 'regression') %>% set_engine('xgboost')) %>%
@@ -1764,7 +1776,7 @@ Set `order_date` to ‘indicator’
 
 ### PROPHET BOOST
 
-Keep `order_date` feature
+*Keep `order_date` feature*
 
     wflw_fit_prophet_xgboost <- workflow() %>%
        add_model(spec = prophet_boost(seasonality_daily  = FALSE,
@@ -1786,7 +1798,7 @@ the calandar features from the recipe.
 
 ### SVM
 
-Set `order_date` to ‘indicator’
+*Set `order_date` to ‘indicator’*
 
     set.seed(321)
     wflw_fit_svm <- workflow() %>%
@@ -1801,7 +1813,7 @@ Set `order_date` to ‘indicator’
 
 ### RANDOM FOREST
 
-Set `order_date` to ‘indicator’
+*Set `order_date` to ‘indicator’*
 
     set.seed(321)
     wflw_fit_rf <- workflow() %>%
@@ -1816,7 +1828,7 @@ Set `order_date` to ‘indicator’
 
 ### NNET
 
-Set `order_date` to ‘indicator’
+*Set `order_date` to ‘indicator’*
 
     set.seed(321)
     wflw_fit_nnet <- workflow() %>%
@@ -1831,7 +1843,7 @@ Set `order_date` to ‘indicator’
 
 ### NNETAR
 
-Keep `order_date` feature
+*Keep `order_date` feature*
 
     set.seed(321)
     wflw_fit_nnetar <- workflow() %>%
@@ -1846,7 +1858,7 @@ Keep `order_date` feature
 
 ### MARS
 
-Set `order_date` to ‘indicator’
+*Set `order_date` to ‘indicator’*
 
     wflw_fit_mars <- workflow() %>%
        add_model(spec = mars(mode = 'regression') %>% set_engine('earth')) %>%
@@ -1860,7 +1872,7 @@ Set `order_date` to ‘indicator’
 
 ### GLMNET
 
-Set `order_date` to ‘indicator’
+*Set `order_date` to ‘indicator’*
 
     wflw_fit_glmnet <- workflow() %>%
        add_model(spec = linear_reg(mode = 'regression',
@@ -2635,7 +2647,7 @@ tuning with many tuning parameters could take ~8 minutes to run on my
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-![](index_files/figure-markdown_strict/unnamed-chunk-51-1.png)
+<img src="index_files/figure-markdown_strict/unnamed-chunk-51-1.png" width="50%" />
 
 The range of the rmse and rsq y-axis is wide-enough to use a round of
 tuning. Update the grid and do round 2.
@@ -2682,7 +2694,7 @@ tuning. Update the grid and do round 2.
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-![](index_files/figure-markdown_strict/unnamed-chunk-55-1.png)
+<img src="index_files/figure-markdown_strict/unnamed-chunk-55-1.png" width="50%" />
 
 Good enough. Look at the y-axis. Another round of tuning won’t make a
 big difference.
@@ -2756,7 +2768,7 @@ big difference.
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-![](index_files/figure-markdown_strict/unnamed-chunk-95-1.png)
+<img src="index_files/figure-markdown_strict/unnamed-chunk-95-1.png" width="70%" />
 
 **Tuning Grid 2**
 
@@ -2804,7 +2816,7 @@ big difference.
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-![](index_files/figure-markdown_strict/unnamed-chunk-99-1.png)
+<img src="index_files/figure-markdown_strict/unnamed-chunk-99-1.png" width="50%" />
 
 **Fit Tuned Workflow on Original Traning Data**
 
