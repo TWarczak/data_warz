@@ -154,7 +154,8 @@ section_pager = false
 docs_section_pager = true  # Display pager in Docs layout (e.g. tutorials)?
 
 # Enable in-built social sharing buttons? (true/false)
-sharing = true
+# adds/removes social media icons after each post. Keep false if already have icons in footer.
+sharing = false
 
 # Link authors to their profile page? (true/false)
 link_authors = true

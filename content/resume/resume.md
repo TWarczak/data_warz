@@ -1,8 +1,4 @@
 ---
-pagetitle: 'Resume - Todd Warczak'
-author: 'Todd Warczak'
-date: 2021-05-30
-
 # See https://sourcethemes.com/academic/docs/page-builder/
 widget: blank
 # This file represents a page section.

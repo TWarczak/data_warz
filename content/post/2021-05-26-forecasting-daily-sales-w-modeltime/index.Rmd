@@ -16,7 +16,7 @@ tags:
    - time-series
    - tidyverse
    - R
-summary: "In my introductory blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist."
+summary: "In my first blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist."
 featured: "featured-hex-modeltime.jpeg"
 image:
    caption: ''
@@ -191,7 +191,7 @@ ggplot(q, aes(reorder_within(state, orders, region, sep = ""), orders, fill = re
              vjust    = 0.4)
 
 ```
-```{r Sales by State/Region, fig.width = 18.5, fig.height = 12.5, cache=TRUE}
+```{r Sales by State/Region, fig.width = 18.5, fig.height = 12.5}
 
 ggplot(q, aes(reorder_within(state, sales, region, sep = ""), sales, fill = region)) +
    geom_col(show.legend = FALSE, alpha = 0.9) +
@@ -218,7 +218,7 @@ ggplot(q, aes(reorder_within(state, sales, region, sep = ""), sales, fill = regi
 Looks like the do business throughout the US, with the most business coming from California. They probably do most of their business from online shopping, as these total sale numbers aren't high enough for multiple warehouses spread across the country.  
 
 Lets also look at number of `orders` and `sales` grouped by `customer_name`, `category`, and `segment`. Any outliers?
-```{r, cache=TRUE}
+```{r}
 # Want to identify any outlier customers, and see if any category/segment of their business dominates
 x <- data_clean_tbl %>%
      group_by(customer_name, category, segment) %>%
@@ -244,7 +244,7 @@ seth_vernon <- data.frame(category = factor("Furniture",
 
 ```
 
-```{r Orders & Sales in log($) per Customer by Category/Segment, fig.width = 16, fig.height = 10, cache=TRUE}
+```{r Orders & Sales in log($) per Customer by Category/Segment, fig.width = 16, fig.height = 10}
 
 ggplot(x, aes(log(sales), orders, color = category)) +
    geom_jitter(aes(shape = segment),
@@ -472,7 +472,7 @@ splits <- data_prepared_tbl %>%
                             cumulative = TRUE)
 
 ```
-```{r Initial Cross Validation Plan, fig.width = 16, fig.height = 6, message=FALSE, class.source = 'fold-hide'}
+```{r Initial Cross Validation Plan, fig.width = 16, fig.height = 6, message=FALSE}
 splits %>%
    tk_time_series_cv_plan() %>%
    plot_time_series_cv_plan(.date_var    = order_date,
@@ -721,7 +721,7 @@ wflw_fit_glmnet_no_f <- workflow() %>%
 That's a lot of code, but also lots of copy/pasting followed by small changes. It's really not that bad.  Let's collect each model/workflow and measure performance on the testing data. 
 
 **Collect and Rename**
-```{r, results='hide', cache=TRUE}
+```{r, results='hide'}
 submodels_tbl <- modeltime_table(model_fit_arima,
                                  wflw_fit_arimaboost,
                                  wflw_fit_arimaboost_no_f,
@@ -763,7 +763,7 @@ submodels_tbl <- modeltime_table(model_fit_arima,
 ```
 
 **Calibrate on Testing Data**
-```{r, cache=TRUE}
+```{r}
 calibration_tbl <- submodels_tbl %>% modeltime_calibrate(testing(splits)) 
 ```
 
@@ -775,7 +775,7 @@ calibration_tbl %>% modeltime_accuracy() %>%  arrange(rmse) %>% table_modeltime_
 Looking for models with low 'rmse' and high 'rsq'.  Those perform the best fit on the testing data. I want to see how only the 6 best models perform.
 
 **Collect 6 Best**
-```{r, results='hide', cache=TRUE}
+```{r, results='hide'}
 submodels_tbl_2 <- modeltime_table(wflw_fit_svm_no_f,
                                    wflw_fit_nnetar_no_f,
                                    wflw_fit_svm,
@@ -819,7 +819,7 @@ There are two types of cross-validation we'll need for resampling.  K-Fold CV fo
 set.seed(321)
 resamples_kfold <- training(splits) %>% vfold_cv(v = 6)
 ```
-```{r K-fold CV Plan, fig.width = 16, fig.height = 7, message=FALSE, class.source = 'fold-hide'}
+```{r K-fold CV Plan, fig.width = 16, fig.height = 7, message=FALSE}
 resamples_kfold %>%
    tk_time_series_cv_plan() %>%
    plot_time_series_cv_plan(order_date,
@@ -841,7 +841,7 @@ resamples_tscv <- time_series_cv(data        = training(splits) %>% drop_na(),
                                  skip        = '6 weeks',
                                  slice_limit = 6)
 ```
-```{r Time_Series CV Plan, fig.width = 16, fig.height = 7, message=FALSE, class.source = 'fold-hide'}
+```{r Time_Series CV Plan, fig.width = 16, fig.height = 7, message=FALSE}
 resamples_tscv %>%
    tk_time_series_cv_plan() %>%
    plot_time_series_cv_plan(order_date,
@@ -965,7 +965,7 @@ tune_results_prophet_boost_2 %>% show_best('rmse', n = Inf)
 # Notice the range on the Y-axis after tuning.  More tuning won't change the rmse or rsq metrics much.
 
 ```
-```{r, include=FALSE, cache=TRUE}
+```{r, include=FALSE}
 # Fit tuned model on training data
 
 wflw_fit_prophet_boost_tuned <- wflw_spec_prophet_boost_tune %>% 
@@ -1060,7 +1060,7 @@ tune_results_svm_2 %>% show_best('rmse', n = 10)
 Good enough. Look at the y-axis. Another round of tuning won't make a big difference.  
 
 **Fit Tuned Workflow on Original Traning Data**
-```{r, cache=TRUE}
+```{r}
 wflw_fit_svm_no_f_tuned <- wflw_spec_svm_tune %>%
    finalize_workflow(select_best(tune_results_svm_2, 'rmse')) %>%
    fit(training(splits))
@@ -1283,7 +1283,7 @@ grid_spec_nnetar_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
                                                    trans = scales::log10_trans()),
                                            size = 10)
 ```
-```{r, cache=TRUE, include=FALSE}
+```{r, include=FALSE}
 set.seed(321)
 tune_results_nnetar_2 <- wflw_spec_nnetar_tune %>% 
                          tune_grid(resamples = resamples_tscv,
@@ -1303,7 +1303,7 @@ tune_results_nnetar_2 %>%
      theme_dark_grey() 
 ```
 
-```{r, cache=TRUE, include=FALSE}
+```{r, include=FALSE}
 #Fit Tuned Workflow on Original Traning Data
 
 wflw_fit_nnetar_no_f_tuned <- wflw_spec_nnetar_tune %>% 
@@ -1399,7 +1399,7 @@ tune_results_nnetar_f_2 %>%
 ```
 
 **Fit Tuned Workflow on Original Traning Data**
-```{r, cache=TRUE}
+```{r}
 
 wflw_fit_nnetar_f_tuned <- wflw_spec_nnetar_tune_f %>% 
                            finalize_workflow(select_best(tune_results_nnetar_f_2, 'rmse')) %>% 
@@ -1411,7 +1411,7 @@ wflw_fit_nnetar_f_tuned <- wflw_spec_nnetar_tune_f %>%
 After lots of tuning, we have 6 models that have been tuned and fit back onto the training data. Now let's evaluate their performance on the testing data.
 
 **Collect Tuned Models**
-```{r, cache=TRUE}
+```{r}
 
 submodels_tuned_tbl <- modeltime_table(wflw_fit_prophet_boost_tuned,
                                        wflw_fit_svm_f_tuned,
@@ -1428,12 +1428,12 @@ submodels_tuned_tbl <- modeltime_table(wflw_fit_prophet_boost_tuned,
 ```
 
 **Calibrate on Test Data**
-```{r, cache=TRUE}
+```{r}
 calibration_tuned_tbl <- submodels_tuned_tbl %>% modeltime_calibrate(testing(splits))
 ```
 
 **Measure Accuracy**
-```{r, cache=TRUE}
+```{r}
 calibration_tuned_tbl %>% modeltime_accuracy() %>% arrange(rmse) 
 ```
 
@@ -1456,7 +1456,7 @@ calibration_tuned_tbl %>%
 The hyperparameter tuning helped the performance of some models, at least regarding fit on the testing data. I could do some more work tuning, but lets move forward and forecast future sales with these tuned models. We need to refit the models on the entire dataset now, not just the training or testing data.  Once refit, we can forecast daily sales for the next 84 days. 
 
 **Refit on All Data**
-```{r, cache=TRUE}
+```{r}
 refit_tbl <- calibration_tuned_tbl %>% 
              modeltime_refit(data = data_prepared_tbl)
 ```
@@ -1516,22 +1516,22 @@ refit_tbl %>%
 There's plenty more we could do to improve these models, but the last thing I'll show here is a quick and easy weighted model. Instead of using all 6 tuned models individually, I wanted to give the best performing tuned models a scalable weight and make 1 weighted ensemble model. My best fitting model was `SVM-no_fourier-tuned`, the worst fitting was `PROPHET_XGBOOST-tuned`.  My weights ranged from 10 for the best to 5 for the worst.  
 
 **Weighted Ensemble Model**
-```{r, cache=TRUE}
+```{r}
 calibration_tuned_tbl %>% modeltime_accuracy() %>% arrange(rmse) 
 ```
-```{r, cache=TRUE}
+```{r}
 weight_ensemble_tbl <- calibration_tuned_tbl %>%  
                        ensemble_weighted(loadings = c(5,7,10,6,8,9)) %>% 
                        modeltime_table()
 ```
 
 **Calibrate Accuracy of Weighted Ensemble Model**
-```{r, cache=TRUE}
+```{r}
 weight_ensemble_tbl %>% modeltime_accuracy(testing(splits))
 ```
 
 **Refit Ensemble on All Data**
-```{r, cache=TRUE}
+```{r}
 refit_weight_tbl <- weight_ensemble_tbl %>% 
                     modeltime_refit(data = data_prepared_tbl)
 ```
@@ -1560,7 +1560,7 @@ refit_weight_tbl %>%
 If you need the actual forecast values, be sure to un-transform and save any individual model or ensemble data. These files have a lot of information, so they can get quite large.  
 
 **Collect Un-Transformed Forecast Data**
-```{r, cache=TRUE}
+```{r}
 forecast_tbl_final <- refit_weight_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl)  %>%  

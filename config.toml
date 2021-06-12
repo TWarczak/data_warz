@@ -41,7 +41,7 @@ defaultMarkdownHandler = "goldmark"
     lineNos = false
     lineNumbersInTable = false
     noClasses = true
-    style = "monokai"  # set this is params.toml
+    style = "monokai"  # set this in params.toml
     tabWidth = 3
 
 

@@ -1,6 +1,6 @@
 ---
 date: "2020-01-01T00:00:00Z"
 summary: "Resume"
-title: Resume
+title: resume
 type: "widget_page"
 ---
