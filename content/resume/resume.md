@@ -6,7 +6,7 @@ headless: true
 # Activate this widget? true/false
 active: true
 # Order that this section will appear.
-weight: 100
+weight: 20
 
 title: ""
 subtitle: ""
@@ -41,7 +41,7 @@ design.spacing:
 # Customize the section spacing. Order is top, right, bottom, left.
   padding: ["100px", "120px", "100px", "120px"]
 
-#[advanced]
+advanced:
 # Custom CSS. 
 #css_style: ""
  

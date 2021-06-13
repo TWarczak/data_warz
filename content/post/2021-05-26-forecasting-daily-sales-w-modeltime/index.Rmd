@@ -22,12 +22,13 @@ image:
    caption: ''
    focal_point: ''
    preview_only: true
+output: md_document
 ---
 
 ```{r setup, include=FALSE}
 library(knitr)
-knitr::opts_chunk$set(cache = TRUE, echo = TRUE, warning = FALSE, message = FALSE, 
-                      dpi = 300, cache.lazy = FALSE, tidy = "styler")
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, 
+                      dpi = 300)
 
 library(tidyverse)
 library(tidymodels)
@@ -122,12 +123,12 @@ df <- read_csv("train.csv")
 ```
 
 ## 🛁 Clean Data {#clean}
-```{r}
+```{r index-1}
 glimpse(df)
 ```
 
 After a little digging a few things become obvious. There are two date variables, but lets only use `Order Date` going forward. It seems `Order Date` format is day/month/year. They only ship within the United States. We don't need individual `order_id` numbers. Let's clean up column names, format the date, factor the categorical variables, and remove what we definitely don't need.   
-```{r}
+```{r index-2}
 data_clean_tbl <- janitor::clean_names(df) %>% 
                   as_tibble() %>% 
                   mutate(order_date = lubridate::dmy(order_date),
@@ -138,7 +139,7 @@ glimpse(data_clean_tbl)
 ```
 
 What period of time does this data cover?
-```{r}
+```{r index-3}
 t <- summarise_by_time(.data     = data_clean_tbl,
                        .date_var = order_date)
 
@@ -155,7 +156,7 @@ This is a daily dataset spanning just under 4 years from 2015-01-03 to 2018-12-3
 ## 🔭 Exploratory Data Analysis {#explore}
 
 Let's group by `region`/`state` to see where the 'Superstore' does business, looking at total `orders` and total `sales`.  
-```{r}
+```{r index-4}
 q <- data_clean_tbl %>%
      group_by(region,state) %>%
      summarise(orders = n(), sales = sum(sales)) %>%
@@ -164,7 +165,7 @@ q <- data_clean_tbl %>%
      arrange(desc(sales))
 
 ```
-```{r Orders by State/Region, fig.width = 18.5, fig.height = 12.5, cache=TRUE, include=FALSE}
+```{r Orders-by-State-Region, fig.width = 18.5, fig.height = 12.5, cache=TRUE, include=FALSE}
 
 ggplot(q, aes(reorder_within(state, orders, region, sep = ""), orders, fill = region)) +
    geom_col(show.legend = FALSE, alpha       = 0.9) +
@@ -191,7 +192,7 @@ ggplot(q, aes(reorder_within(state, orders, region, sep = ""), orders, fill = re
              vjust    = 0.4)
 
 ```
-```{r Sales by State/Region, fig.width = 18.5, fig.height = 12.5}
+```{r Sales-by-State-Region, fig.width = 18.5, fig.height = 12.5}
 
 ggplot(q, aes(reorder_within(state, sales, region, sep = ""), sales, fill = region)) +
    geom_col(show.legend = FALSE, alpha = 0.9) +
@@ -218,7 +219,7 @@ ggplot(q, aes(reorder_within(state, sales, region, sep = ""), sales, fill = regi
 Looks like the do business throughout the US, with the most business coming from California. They probably do most of their business from online shopping, as these total sale numbers aren't high enough for multiple warehouses spread across the country.  
 
 Lets also look at number of `orders` and `sales` grouped by `customer_name`, `category`, and `segment`. Any outliers?
-```{r}
+```{r index-5}
 # Want to identify any outlier customers, and see if any category/segment of their business dominates
 x <- data_clean_tbl %>%
      group_by(customer_name, category, segment) %>%
@@ -244,7 +245,7 @@ seth_vernon <- data.frame(category = factor("Furniture",
 
 ```
 
-```{r Orders & Sales in log($) per Customer by Category/Segment, fig.width = 16, fig.height = 10}
+```{r Orders-&-Sales-in-log($)-per-Customer-by-Category-Segment, fig.width = 16, fig.height = 10}
 
 ggplot(x, aes(log(sales), orders, color = category)) +
    geom_jitter(aes(shape = segment),
@@ -283,7 +284,7 @@ Their sales are spread pretty evenly between these categories.  More orders are 
 Now lets focus on sales within this time-series. If we want to forecast sales, we can't use any other variable but `order_date`. After 2018-12-30 we don't have any information about the number of orders or where those orders are coming from. We could build models using , for example, `orders` as an independent variable to predict sales, but only until 2018-12-30. After that, the models will break down since we don't have values for `orders` to predict `sales` with.
 
 This is when we really start using `{timetk}` and `{modeltime}`. Hopefully you can appreciate how well they work alongside `{tidyverse}` and `{tidymodels}` packages. No more learning unique processes for every type of model you want to build.   
-```{r, results='hide'}
+```{r index-6, results='hide'}
 sales_daily_tbl <- data_clean_tbl %>% 
                    summarise_by_time(.date_var = order_date, 
                                      .by       = 'day', 
@@ -291,7 +292,7 @@ sales_daily_tbl <- data_clean_tbl %>%
 ```
 
 Let's look at the daily total sales for this company over the time-series.  
-```{r Daily Total Sales, fig.width = 16, fig.height = 6}
+```{r Daily-Total-Sales, fig.width = 16, fig.height = 6}
 sales_daily_tbl %>% 
    plot_time_series(.date_var     = order_date,
                     .value        = sales,
@@ -310,7 +311,7 @@ rows of daily data. If we have a row for every day, we should have about
 time-series is complete. We can fill sales with 0 for these missing days.
 
 ###  Pad Missing Dates
-```{r}
+```{r index-7}
 sales_daily_pad_tbl <- sales_daily_tbl %>% 
                        pad_by_time(order_date, 
                                    .by        = 'day', 
@@ -323,7 +324,7 @@ glimpse(sales_daily_pad_tbl)
 Our sales variable ranges from 0 to ~ 30,000 on any given day, so we'll need to transform this continuous variable. And since 0's can mess up our machine learning models, we'll use a log10 + 1 transformation, followed by standardization that centers our data around 0.  We could do this at each recipe stage of our workflows, but we can do it here once and be done with it. Lets also change sales to sales_trans.
 
 ###  Transform `sales` 
-```{r}
+```{r index-8}
 sales_daily_pad_trans_tbl <- sales_daily_pad_tbl %>%
                              mutate(sales = log_interval_vec(sales, 
                                                              limit_lower = 0, 
@@ -333,7 +334,7 @@ sales_daily_pad_trans_tbl <- sales_daily_pad_tbl %>%
 ```
    
 We need to keep track of the Standardization Parameters for when we un-transform the data at the end.  
-```{r, results='hide'}
+```{r index-9, results='hide'}
 limit_lower <-  0
 limit_upper <-  30918.3876
 offset <-  1
@@ -342,7 +343,7 @@ std_sd_sales <- 2.86059320652223
 ```
 
 Let's look at our new padded & transformed time-series.
-```{r Daily Total Sales (Padded & Transformed), fig.width = 16, fig.height = 6}
+```{r Daily-Total-Sales-Padded-Transformed, fig.width = 16, fig.height = 6}
 sales_daily_pad_trans_tbl %>% 
    plot_time_series(order_date,
                     sales_trans,
@@ -359,7 +360,7 @@ We might want to add lags, rolling lags, and/or fourier-series features that cou
 Let's look at ACF/PACF plots to see if any periods look usable.     
 
 ### ACF/PACF
-```{r Lag Diagnostics, fig.width = 16, fig.height = 8}
+```{r Lag-Diagnostics, fig.width = 16, fig.height = 8}
 
 lag_labels <- data.frame(name  = c("ACF","ACF","ACF","ACF","ACF","PACF","PACF","PACF","PACF"),
                          label = c('7','14','21','28','357','7','14','21','28'))
@@ -385,14 +386,14 @@ Clearly there is a strong weekly correlation of sales vs sales 7d, 14d, 21d, ...
 I experimented with multiple lag and Fourier-Series combos. A lag the length of my forecast (84 days) with rolling 30d, 60d, and 90d averages helped. Additional lags and Fourier-Series did not improve model accuracy. It's possible I didn't use them correctly, or experiment enough. I'll include multiple Fourier-Series with 3 orders each to show the process.
 
 ###  Add Forecast/Lag/Rolling Averages
-```{r, results='hide'}
+```{r index-10, results='hide'}
 forecast_3_month <- 84
 lag_period       <- 84            # 84 smallest lag period to get our forecast of 84 into the future
 rolling_periods  <- c(30, 60, 90) # 1 month, 2 month, and 3 month moving averages as features to catch the trend
 ```
 
 ###  Full Data
-```{r}
+```{r index-11}
 full_data_prepared_tbl <- sales_daily_pad_trans_tbl %>% 
                           future_frame(.date_var   = order_date, 
                                        .length_out = forecast_3_month, 
@@ -417,7 +418,7 @@ glimpse(full_data_prepared_tbl)
 ```
 
 The time-series now includes lag, rolling_lag and fourier-series data in future forecast dates. If these features help model accuracy on the training/testing sets, we can assume they'll help the models forecast future sales. They may or may not help though. Gotta experiment. Let's look at the lag and rolling lags data. 
-```{r Lagged Rolling Averages, fig.width = 16, fig.height = 6}
+```{r Lagged-Rolling-Averages, fig.width = 16, fig.height = 6}
 full_data_prepared_tbl %>%
    pivot_longer(c(sales_trans,
                   lag_sales_trans_lag84,
@@ -431,7 +432,7 @@ full_data_prepared_tbl %>%
 ```
 
 Notice each of the first 84 days lacks at least some of the lag/rolling lag features. We can't use these days in our testing/training splits. That's the downside. We probably could pad those dates somehow, but I won't try here. 
-```{r, include=FALSE}
+```{r index-12, include=FALSE}
 skimr::skim_without_charts(full_data_prepared_tbl)
 ```
 
@@ -440,7 +441,7 @@ The `full_data_prepared_tbl` has 1542 rows (1458 original days + 84 future days)
 ###  Forecast Data
 
 We can use `{skimr}` to show us a summary of our data.
-```{r}
+```{r index-13}
 forecast_tbl <- full_data_prepared_tbl %>% 
                 filter(is.na(sales_trans))
 
@@ -454,7 +455,7 @@ The `forecast_tbl` has 37 columns and 84 rows for future dates starting 2018-12-
 ###  Training/Testing Data
 
 The rest of the data we'll call the `data_prepared_tbl`. We need to drop those rows that lack any lag/rolling lag data.
-```{r}
+```{r index-14}
 data_prepared_tbl <- full_data_prepared_tbl %>% 
                      filter(!is.na(sales_trans)) %>% 
                      drop_na()
@@ -465,14 +466,14 @@ skimr::skim_without_charts(data_prepared_tbl)
 37 columns, 1374 rows, no missing data. Dates now range from 2015-03-28 to 2018-12-30.  Good to go.  
 
 I decided to split training/testing so we're testing on the last 84 days, the same amount of days in our `forecast_tbl`. Could have split differently. Cross-Validation for sequential models need to be ordered, so making the testing set too big limits the benefit of time-series cross-validation. That'll make sense soon.   
-```{r}
+```{r index-15}
 splits <- data_prepared_tbl %>% 
           time_series_split(date_var   = order_date,
                             assess     = 84,
                             cumulative = TRUE)
 
 ```
-```{r Initial Cross Validation Plan, fig.width = 16, fig.height = 6, message=FALSE}
+```{r Initial-Cross-Validation-Plan, fig.width = 16, fig.height = 6, message=FALSE}
 splits %>%
    tk_time_series_cv_plan() %>%
    plot_time_series_cv_plan(.date_var    = order_date,
@@ -490,7 +491,7 @@ splits %>%
 I'm going to make two recipes for modeling workflows. One recipe will include the Fourier-Series, and one will lack Fourier-Series. I could have done this differently, but it works.
 
 The `step_timeseries_signature()` function adds many time-series features based on our date variable, `order_date`. We just have to remove features we can't use with our daily dataset, like features involving minutes, hours, etc. I also added steps to normalize numeric variables and dummy the nominal variables.
-```{r, results='hide'}
+```{r index-16, results='hide'}
 recipe_spec <- recipe(sales_trans ~ ., data = training(splits)) %>% 
                step_timeseries_signature(order_date) %>% 
                update_role(rowid, new_role = 'indicator') %>% 
@@ -501,7 +502,7 @@ recipe_spec <- recipe(sales_trans ~ ., data = training(splits)) %>%
 ```
 
 `recipe_spec` uses all the Fourier-Series found in our `data_prepared_tbl`.
-```{r, results='hide'}
+```{r index-17, results='hide'}
 recipe_spec_no_f <- recipe(sales_trans ~ order_date 
                            + lag_sales_trans_lag84
                            + lag_sales_trans_lag84_roll_30
@@ -517,7 +518,7 @@ recipe_spec_no_f <- recipe(sales_trans ~ order_date
 ```
 
 `recipe_spec_no_f` does NOT use the Fourier-Series found in our `data_prepared_tbl`.
-```{r}
+```{r index-18}
 recipe_spec_no_f %>% prep() %>% juice() %>% glimpse()
 ```
 
@@ -549,7 +550,7 @@ Ok, lets build!
 
 ###  ARIMA 
 *Only model w/out a workflow*
-```{r, results='hide', cache=TRUE}
+```{r index-19, results='hide', cache=TRUE}
 set.seed(321)
 model_fit_arima <- arima_reg() %>%
    set_engine('auto_arima') %>%
@@ -558,7 +559,7 @@ model_fit_arima <- arima_reg() %>%
 
 ###  ARIMA BOOST
 *Keep `order_date` feature*
-```{r, results='hide', cache=TRUE}
+```{r index-20, results='hide', cache=TRUE}
 
 wflw_fit_arimaboost <- workflow() %>%
    add_model(spec = arima_boost() %>% set_engine('auto_arima_xgboost')) %>%
@@ -573,7 +574,7 @@ wflw_fit_arimaboost_no_f <- workflow() %>%
 
 ###  PROPHET
 *Keep `order_date` feature*
-```{r, results='hide', cache=TRUE}
+```{r index-21, results='hide', cache=TRUE}
 
 wflw_fit_prophet <- workflow() %>%
    add_model(spec = prophet_reg() %>% set_engine('prophet')) %>%
@@ -588,7 +589,7 @@ wflw_fit_prophet_no_f <- workflow() %>%
 
 ###  XGBOOST
 *Set `order_date` to 'indicator'*
-```{r, results='hide', cache=TRUE}
+```{r index-22, results='hide', cache=TRUE}
 
 wflw_fit_xgboost <- workflow() %>%
    add_model(spec = boost_tree(mode = 'regression') %>% set_engine('xgboost')) %>%
@@ -603,7 +604,7 @@ wflw_fit_xgboost_no_f <- workflow() %>%
 
 ###  PROPHET BOOST
 *Keep `order_date` feature*
-```{r, results='hide', cache=TRUE}
+```{r index-23, results='hide', cache=TRUE}
 
 wflw_fit_prophet_xgboost <- workflow() %>%
    add_model(spec = prophet_boost(seasonality_daily  = FALSE,
@@ -623,7 +624,7 @@ I turned Prophet seasonalities off so prophet is only used for trend. XGBoost wi
 
 ###  SVM
 *Set `order_date` to 'indicator'*
-```{r, results='hide', cache=TRUE}
+```{r index-24, results='hide', cache=TRUE}
 set.seed(321)
 wflw_fit_svm <- workflow() %>%
    add_model(spec = svm_rbf(mode = 'regression') %>% set_engine('kernlab')) %>%
@@ -638,7 +639,7 @@ wflw_fit_svm_no_f <- workflow() %>%
 
 ###  RANDOM FOREST
 *Set `order_date` to 'indicator'*
-```{r, results='hide', cache=TRUE}
+```{r index-25, results='hide', cache=TRUE}
 set.seed(321)
 wflw_fit_rf <- workflow() %>%
    add_model(spec = rand_forest(mode = 'regression') %>% set_engine('ranger')) %>%
@@ -653,7 +654,7 @@ wflw_fit_rf_no_f <- workflow() %>%
 
 ###  NNET
 *Set `order_date` to 'indicator'*
-```{r, results='hide', cache=TRUE}
+```{r index-26, results='hide', cache=TRUE}
 
 set.seed(321)
 wflw_fit_nnet <- workflow() %>%
@@ -671,7 +672,7 @@ wflw_fit_nnet_no_f <- workflow() %>%
 
 ###  NNETAR
 *Keep `order_date` feature*
-```{r, results='hide', cache=TRUE}
+```{r index-27, results='hide', cache=TRUE}
 set.seed(321)
 wflw_fit_nnetar <- workflow() %>%
    add_model(nnetar_reg() %>% set_engine('nnetar')) %>%
@@ -686,7 +687,7 @@ wflw_fit_nnetar_no_f <- workflow() %>%
 
 ###  MARS
 *Set `order_date` to 'indicator'*
-```{r, results='hide', cache=TRUE}
+```{r index-28, results='hide', cache=TRUE}
 
 wflw_fit_mars <- workflow() %>%
    add_model(spec = mars(mode = 'regression') %>% set_engine('earth')) %>%
@@ -701,7 +702,7 @@ wflw_fit_mars_no_f <- workflow() %>%
 
 ###  GLMNET
 *Set `order_date` to 'indicator'*
-```{r, results='hide', cache=TRUE}
+```{r index-29, results='hide', cache=TRUE}
 
 wflw_fit_glmnet <- workflow() %>%
    add_model(spec = linear_reg(mode = 'regression',
@@ -721,7 +722,7 @@ wflw_fit_glmnet_no_f <- workflow() %>%
 That's a lot of code, but also lots of copy/pasting followed by small changes. It's really not that bad.  Let's collect each model/workflow and measure performance on the testing data. 
 
 **Collect and Rename**
-```{r, results='hide'}
+```{r index-30, results='hide'}
 submodels_tbl <- modeltime_table(model_fit_arima,
                                  wflw_fit_arimaboost,
                                  wflw_fit_arimaboost_no_f,
@@ -763,19 +764,19 @@ submodels_tbl <- modeltime_table(model_fit_arima,
 ```
 
 **Calibrate on Testing Data**
-```{r}
+```{r index-31}
 calibration_tbl <- submodels_tbl %>% modeltime_calibrate(testing(splits)) 
 ```
 
 **Measure Accuracy**
-```{r}
+```{r index-32}
 calibration_tbl %>% modeltime_accuracy() %>%  arrange(rmse) %>% table_modeltime_accuracy(.interactive = FALSE)
 ```
 
 Looking for models with low 'rmse' and high 'rsq'.  Those perform the best fit on the testing data. I want to see how only the 6 best models perform.
 
 **Collect 6 Best**
-```{r, results='hide'}
+```{r index-33, results='hide'}
 submodels_tbl_2 <- modeltime_table(wflw_fit_svm_no_f,
                                    wflw_fit_nnetar_no_f,
                                    wflw_fit_svm,
@@ -791,7 +792,7 @@ submodels_tbl_2 <- modeltime_table(wflw_fit_svm_no_f,
 ```
 
 **Visualize Best 6 Models Fit on Testing Data**
-```{r Models fit on testing(splits), fig.width = 16, fig.height = 6}
+```{r Models-fit-testing-splits, fig.width = 16, fig.height = 6}
 calibration_tbl <- submodels_tbl_2 %>% modeltime_calibrate(testing(splits)) 
 
 calibration_tbl %>%
@@ -815,11 +816,11 @@ Not bad. But we can tune these models for a better fit before forecasting.
 There are two types of cross-validation we'll need for resampling.  K-Fold CV for models that can train on random data and Time-Series CV for models that need to train on sequential or ordered data. You'll see.  
 
 **K-Fold CV**
-```{r}
+```{r index-34}
 set.seed(321)
 resamples_kfold <- training(splits) %>% vfold_cv(v = 6)
 ```
-```{r K-fold CV Plan, fig.width = 16, fig.height = 7, message=FALSE}
+```{r K-fold-CV-Plan, fig.width = 16, fig.height = 7, message=FALSE}
 resamples_kfold %>%
    tk_time_series_cv_plan() %>%
    plot_time_series_cv_plan(order_date,
@@ -833,7 +834,7 @@ resamples_kfold %>%
 ```
 
 **Time-Series CV**
-```{r}
+```{r index-35}
 set.seed(321)
 resamples_tscv <- time_series_cv(data        = training(splits) %>% drop_na(),
                                  cumulative  = TRUE,
@@ -841,7 +842,7 @@ resamples_tscv <- time_series_cv(data        = training(splits) %>% drop_na(),
                                  skip        = '6 weeks',
                                  slice_limit = 6)
 ```
-```{r Time_Series CV Plan, fig.width = 16, fig.height = 7, message=FALSE}
+```{r Time_Series-CV-Plan, fig.width = 16, fig.height = 7, message=FALSE}
 resamples_tscv %>%
    tk_time_series_cv_plan() %>%
    plot_time_series_cv_plan(order_date,
@@ -875,35 +876,35 @@ shows me. Then I do it again until additional tunes make little impact on the
 rmse/rsq. Hint - pay attention to the y-axis of the plots. Models tuning with
 many tuning parameters could take ~8 minutes to run on my 2019 16 GB, 1.6
 GHz MacBook Air. I could use an upgrade.
-```{r, include=FALSE}
+```{r index-36, include=FALSE}
 # PROPHET-XGBOOST TUNE
 model_spec_prophet_boost_tune <- prophet_boost(changepoint_num    = tune(),
                                                changepoint_range  = 0.8,
                                                seasonality_yearly = FALSE,
                                                seasonality_weekly = FALSE,
                                                seasonality_daily  = FALSE,
-                                               mtry           = 0.8,
+                                               mtry               = 0.8,
                                                trees          = tune(),
                                                min_n          = tune(),
                                                tree_depth     = tune(),
                                                learn_rate     = tune(),
                                                loss_reduction = tune() ) %>% 
-                                 set_engine('prophet_xgboost')
+                                 set_engine('prophet_xgboost', counts = FALSE)
 # Turned Prophet seasonalities off so prophet is only used for trend
 # XGBoost will model seasonality with the Prophet Model's residuals using the calandar features from the recipe spec
 ```
-```{r, include=FALSE}
+```{r index-37, include=FALSE}
 wflw_spec_prophet_boost_tune <- workflow() %>% 
                                 add_model(model_spec_prophet_boost_tune) %>% 
                                 add_recipe(recipe_spec_no_f)
 ```
-```{r, include=FALSE}
+```{r index-38, include=FALSE}
 # Grid
 
 set.seed(321)
 grid_spec_prophet_boost_1 <- grid_latin_hypercube(parameters(model_spec_prophet_boost_tune), size = 20)
 ```
-```{r, include=FALSE, cache=TRUE}
+```{r index-39, include=FALSE, cache=TRUE}
 # Round 1
 # K-fold CV + Tuning Grid 1
 # Set learn_rate bc this is a costly run-time, so the more tuning parameters, the longer it takes.  
@@ -916,12 +917,12 @@ tune_results_prophet_boost_1 <- wflw_spec_prophet_boost_tune %>%
                                           grid       = grid_spec_prophet_boost_1, 
                                           control    = control_grid(verbose = TRUE))
 ```
-```{r, include=FALSE}
+```{r index-40, include=FALSE}
 # Results Table 1
 
 tune_results_prophet_boost_1 %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 20, fig.height = 6, include=FALSE}
+```{r index-41, fig.width = 20, fig.height = 6, include=FALSE}
 # Results Plot 1
 
  tune_results_prophet_boost_1 %>% 
@@ -930,7 +931,7 @@ tune_results_prophet_boost_1 %>% show_best('rmse', n = 10)
     # geom_smooth(se = FALSE, size = 0.5) +
      theme_dark_grey() 
 ```
-```{r, include=FALSE}
+```{r index-42, include=FALSE}
 # Tuning Grid 2
 
 set.seed(321)
@@ -944,7 +945,7 @@ grid_spec_prophet_boost_2 <- grid_latin_hypercube(changepoint_num(range = c(28,3
                                                              trans = scales::log10_trans()),
                                                   size = 20)
 ```
-```{r, include=FALSE, cache=TRUE}
+```{r index-43, include=FALSE, cache=TRUE}
 # Tuning Round 2
 
 set.seed(321)
@@ -954,7 +955,7 @@ tune_results_prophet_boost_2 <- wflw_spec_prophet_boost_tune %>%
              grid       = grid_spec_prophet_boost_2, 
              control    = control_grid(verbose = TRUE))
 ```
-```{r, fig.width = 20, fig.height = 6, include=FALSE}
+```{r index-44, fig.width = 20, fig.height = 6, include=FALSE}
 tune_results_prophet_boost_2 %>% show_best('rmse', n = Inf)
 
  tune_results_prophet_boost_2 %>% 
@@ -965,7 +966,7 @@ tune_results_prophet_boost_2 %>% show_best('rmse', n = Inf)
 # Notice the range on the Y-axis after tuning.  More tuning won't change the rmse or rsq metrics much.
 
 ```
-```{r, include=FALSE}
+```{r index-45, include=FALSE}
 # Fit tuned model on training data
 
 wflw_fit_prophet_boost_tuned <- wflw_spec_prophet_boost_tune %>% 
@@ -976,7 +977,7 @@ wflw_fit_prophet_boost_tuned <- wflw_spec_prophet_boost_tune %>%
 ### SVM - no Fourier-Series
 
 **Tunable Model**
-```{r}
+```{r index-46}
 model_spec_svm_tune <- svm_rbf(mode      = 'regression',
                                cost      = tune(),
                                rbf_sigma = tune(),
@@ -987,7 +988,7 @@ model_spec_svm_tune <- svm_rbf(mode      = 'regression',
 **Workflow**
 
 *Change `order_date` feature to 'indicator'*
-```{r}
+```{r index-47}
 wflw_spec_svm_tune <- workflow() %>%
                       add_model(model_spec_svm_tune) %>%
                       add_recipe(recipe_spec_no_f %>% update_role(order_date,
@@ -995,13 +996,13 @@ wflw_spec_svm_tune <- workflow() %>%
 ```
 
 **Tuning Grid 1**
-```{r}
+```{r index-48}
 grid_spec_svm_1 <- grid_latin_hypercube(parameters(model_spec_svm_tune),
                                                    size = 20)
 ```
 
 **Tuning Round 1**
-```{r, results='hide', cache=TRUE}
+```{r index-49, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_svm <- wflw_spec_svm_tune %>%
                     tune_grid(resamples  = resamples_kfold,
@@ -1010,12 +1011,12 @@ tune_results_svm <- wflw_spec_svm_tune %>%
 ```
 
 **Results Table 1**
-```{r}
+```{r index-50}
 tune_results_svm %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 1**
-```{r, out.width='50%', results='hide'}
+```{r index-51, out.width='50%', results='hide'}
  tune_results_svm %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1026,7 +1027,7 @@ tune_results_svm %>% show_best('rmse', n = 10)
 The range of the rmse and rsq y-axis is wide-enough to use a round of tuning. Update the grid and do round 2.
 
 **Tuning Grid 2**
-```{r}
+```{r index-52}
 grid_spec_svm_2 <- grid_latin_hypercube(cost(range = c(3.2,3.5),
                                              trans = scales::log2_trans()),
                                         rbf_sigma(range = c(-2.45,-2.35),
@@ -1035,7 +1036,7 @@ grid_spec_svm_2 <- grid_latin_hypercube(cost(range = c(3.2,3.5),
 ```
 
 **Tuning Round 2**
-```{r, results='hide', cache=TRUE}
+```{r index-53, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_svm_2 <- wflw_spec_svm_tune %>%
                       tune_grid(resamples  = resamples_kfold,
@@ -1044,12 +1045,12 @@ tune_results_svm_2 <- wflw_spec_svm_tune %>%
 ```
 
 **Results Table 2**
-```{r}
+```{r index-54}
 tune_results_svm_2 %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 2**
-```{r, out.width='50%',  results='hide'}
+```{r index-55, out.width='50%',  results='hide'}
  tune_results_svm_2 %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1060,13 +1061,13 @@ tune_results_svm_2 %>% show_best('rmse', n = 10)
 Good enough. Look at the y-axis. Another round of tuning won't make a big difference.  
 
 **Fit Tuned Workflow on Original Traning Data**
-```{r}
+```{r index-56}
 wflw_fit_svm_no_f_tuned <- wflw_spec_svm_tune %>%
    finalize_workflow(select_best(tune_results_svm_2, 'rmse')) %>%
    fit(training(splits))
 ```
 
-```{r, include=FALSE}
+```{r index-57, include=FALSE}
 ## SVM w/ Fourier Series
 # Tunable Model
 model_spec_svm_tune_f <- svm_rbf(mode      = 'regression',
@@ -1075,7 +1076,7 @@ model_spec_svm_tune_f <- svm_rbf(mode      = 'regression',
                                  margin    = 0.17) %>%
                          set_engine('kernlab')
 ```
-```{r, include=FALSE}
+```{r index-58, include=FALSE}
 ## Workflow  
 # Change `order_date` feature to 'indicator'
 
@@ -1084,13 +1085,13 @@ wflw_spec_svm_tune_f <- workflow() %>%
                         add_recipe(recipe_spec %>% update_role(order_date,
                                                                new_role = 'indicator'))
 ```
-```{r, include=FALSE}
+```{r index-59, include=FALSE}
 # Tuning Grid 1
 
 grid_spec_svm_f_1 <- grid_latin_hypercube(parameters(model_spec_svm_tune_f),
                                           size = 20)
 ```
-```{r, results='hide', include=FALSE, cache=TRUE}
+```{r index-60, results='hide', include=FALSE, cache=TRUE}
 # Tuning Round 1
 
 set.seed(321)
@@ -1099,12 +1100,12 @@ tune_results_svm_f <- wflw_spec_svm_tune_f %>%
                                 grid       = grid_spec_svm_f_1,
                                 control    = control_grid(verbose = TRUE))
 ```
-```{r, include=FALSE}
+```{r index-61, include=FALSE}
 # Results Table
 
 tune_results_svm_f %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 8, fig.height = 6, include=FALSE}
+```{r index-62, fig.width = 8, fig.height = 6, include=FALSE}
 # Results Plot
 
 tune_results_svm_f %>% 
@@ -1113,7 +1114,7 @@ tune_results_svm_f %>%
      geom_smooth(se = FALSE, size = 0.5) +
      theme_dark_grey() 
 ```
-```{r, include=FALSE}
+```{r index-63, include=FALSE}
 # Tuning Grid 2
 grid_spec_svm_f_2 <- grid_latin_hypercube(cost(range = c(1,2),
                                                trans = scales::log2_trans()),
@@ -1121,7 +1122,7 @@ grid_spec_svm_f_2 <- grid_latin_hypercube(cost(range = c(1,2),
                                                trans = scales::log10_trans()),
                                           size = 10)
 ```
-```{r, results='hide', include=FALSE, cache=TRUE}
+```{r index-64, results='hide', include=FALSE, cache=TRUE}
 # Tuning Round 2
 set.seed(321)
 tune_results_svm_f_2 <- wflw_spec_svm_tune_f %>%
@@ -1129,12 +1130,12 @@ tune_results_svm_f_2 <- wflw_spec_svm_tune_f %>%
                                   grid       = grid_spec_svm_f_2,
                                   control    = control_grid(verbose = TRUE))
 ```
-```{r, include=FALSE}
+```{r index-65, include=FALSE}
 # Results Table 2
 
 tune_results_svm_f_2 %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 8, fig.height = 6, include=FALSE}
+```{r index-66, fig.width = 8, fig.height = 6, include=FALSE}
 # Results Plot 2 
  tune_results_svm_f_2 %>% 
      autoplot +
@@ -1142,14 +1143,14 @@ tune_results_svm_f_2 %>% show_best('rmse', n = 10)
      geom_smooth(se = FALSE, size = 0.5) +
      theme_dark_grey() 
 ```
-```{r, include=FALSE}
+```{r index-67, include=FALSE}
 # Fit Tuned Workflow on Original Traning Data
 
 wflw_fit_svm_f_tuned <- wflw_spec_svm_tune_f %>%
    finalize_workflow(select_best(tune_results_svm_f_2, 'rmse')) %>%
    fit(training(splits))
 ```
-```{r, include=FALSE}
+```{r index-68, include=FALSE}
 ## RANDOM FOREST
 
 # Tunable Model
@@ -1160,7 +1161,7 @@ model_spec_rf_tune <- rand_forest(mode  = 'regression',
                                   min_n = tune()) %>%
                       set_engine('ranger')
 ```
-```{r, include=FALSE}
+```{r index-69, include=FALSE}
 ## Workflow  
 # Change `order_date` feature to 'indicator'
 
@@ -1169,13 +1170,13 @@ wflw_spec_rf_tune <- workflow() %>%
                      add_recipe(recipe_spec_no_f %>% update_role(order_date, 
                                                                  new_role = 'indicator'))
 ```
-```{r, include=FALSE}
+```{r index-70, include=FALSE}
 # Tuning Grid 1
 
 grid_spec_rf_1 <- grid_latin_hypercube(parameters(model_spec_rf_tune),
                                        size = 10)
 ```
-```{r, include=FALSE, cache=TRUE}
+```{r index-71, include=FALSE, cache=TRUE}
 # Tuning Round 1
 
 set.seed(321)
@@ -1184,12 +1185,12 @@ tune_results_rf <- wflw_spec_rf_tune %>%
                              grid      = grid_spec_rf_1,
                              control   = control_grid(verbose = TRUE))
 ```
-```{r, include=FALSE}
+```{r index-72, include=FALSE}
 # Results Table
 
 tune_results_rf %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 8, fig.height = 6, include=FALSE}
+```{r index-73, fig.width = 8, fig.height = 6, include=FALSE}
 # Results Plot
 
  tune_results_rf %>% 
@@ -1198,13 +1199,13 @@ tune_results_rf %>% show_best('rmse', n = 10)
      geom_smooth(se = FALSE, size = 0.5) +
      theme_dark_grey() 
 ```
-```{r, include=FALSE}
+```{r index-74, include=FALSE}
 # Tuning Grid 2 
 grid_spec_rf_2 <- grid_latin_hypercube(trees(range = c(1500,1800)),
                                        min_n(range = c(35,50)),
                                        size = 10)
 ```
-```{r, include=FALSE, cache=TRUE}
+```{r index-75, include=FALSE, cache=TRUE}
 # Tuning Round 2 
 
 set.seed(321)
@@ -1213,13 +1214,13 @@ tune_results_rf_2 <- wflw_spec_rf_tune %>%
                                grid      = grid_spec_rf_2,
                                control   = control_grid(verbose = TRUE))
 ```
-```{r, include=FALSE}
+```{r index-76, include=FALSE}
 # Results Table 2 
 
 tune_results_rf_2 %>% show_best('rmse', n = 10)
 
 ```
-```{r, fig.width = 8, fig.height = 6, include=FALSE}
+```{r index-77, fig.width = 8, fig.height = 6, include=FALSE}
 # Results Table 2
 
  tune_results_rf_2 %>% 
@@ -1228,7 +1229,7 @@ tune_results_rf_2 %>% show_best('rmse', n = 10)
      geom_smooth(se = FALSE, size = 0.5) +
      theme_dark_grey() 
 ```
-```{r, include=FALSE, cache=TRUE}
+```{r index-78, include=FALSE, cache=TRUE}
 # Fit Tuned Workflow on Original Traning Data
 
 wflw_fit_rf_tuned <- wflw_spec_rf_tune %>%
@@ -1236,7 +1237,7 @@ wflw_fit_rf_tuned <- wflw_spec_rf_tune %>%
                      fit(training(splits))
 ```
 
-```{r, include=FALSE}
+```{r index-79, include=FALSE}
 model_spec_nnetar_tune <- nnetar_reg(mode            = 'regression', 
                                      seasonal_period = 7,
                                      non_seasonal_ar = tune(),
@@ -1247,34 +1248,34 @@ model_spec_nnetar_tune <- nnetar_reg(mode            = 'regression',
                                      epochs          = 50) %>% 
                           set_engine('nnetar')
 ```
-```{r, include=FALSE}
+```{r index-80, include=FALSE}
 wflw_spec_nnetar_tune <- workflow() %>% 
                          add_model(model_spec_nnetar_tune) %>% 
                          add_recipe(recipe_spec_no_f)
 ```
-```{r, include=FALSE}
+```{r index-81, include=FALSE}
 grid_spec_nnetar_1 <- grid_latin_hypercube(parameters(model_spec_nnetar_tune),
                                            size = 20)
 
 ```
-```{r, cache=TRUE, include=FALSE}
+```{r index-82, cache=TRUE, include=FALSE}
 set.seed(321)
 tune_results_nnetar <- wflw_spec_nnetar_tune %>% 
                        tune_grid(resamples = resamples_tscv,
                                  grid      = grid_spec_nnetar_1,
                                  control   = control_grid(verbose = TRUE))
 ```
-```{r, include=FALSE}
+```{r index-83, include=FALSE}
 tune_results_nnetar %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 14, fig.height = 6, include=FALSE}
+```{r index-84, fig.width = 14, fig.height = 6, include=FALSE}
  tune_results_nnetar %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
      geom_smooth(se = FALSE, size = 0.5) +
      theme_dark_grey() 
 ```
-```{r, cache=TRUE, include=FALSE}
+```{r index-85, cache=TRUE, include=FALSE}
 set.seed(321)
 grid_spec_nnetar_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
                                            seasonal_ar(range = c(0,0)),
@@ -1283,17 +1284,17 @@ grid_spec_nnetar_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
                                                    trans = scales::log10_trans()),
                                            size = 10)
 ```
-```{r, include=FALSE}
+```{r index-86, include=FALSE, cache=TRUE}
 set.seed(321)
 tune_results_nnetar_2 <- wflw_spec_nnetar_tune %>% 
                          tune_grid(resamples = resamples_tscv,
                                    grid      = grid_spec_nnetar_2,
                                    control   = control_grid(verbose = TRUE))
 ```
-```{r, include=FALSE}
+```{r index-87, include=FALSE}
 tune_results_nnetar_2 %>% show_best('rmse', n = 10)
 ```
-```{r, fig.width = 8, fig.height = 6, include=FALSE}
+```{r index-88, fig.width = 8, fig.height = 6, include=FALSE}
 #Results Plot 2
 
 tune_results_nnetar_2 %>% 
@@ -1303,7 +1304,7 @@ tune_results_nnetar_2 %>%
      theme_dark_grey() 
 ```
 
-```{r, include=FALSE}
+```{r index-89, include=FALSE}
 #Fit Tuned Workflow on Original Traning Data
 
 wflw_fit_nnetar_no_f_tuned <- wflw_spec_nnetar_tune %>% 
@@ -1314,7 +1315,7 @@ wflw_fit_nnetar_no_f_tuned <- wflw_spec_nnetar_tune %>%
 ### NNETAR - w/ Fourier Series
 
 **Tunable Model**
-```{r}
+```{r index-90}
 model_spec_nnetar_tune <- nnetar_reg(mode            = 'regression', 
                                      seasonal_period = 7,
                                      non_seasonal_ar = tune(),
@@ -1329,20 +1330,20 @@ model_spec_nnetar_tune <- nnetar_reg(mode            = 'regression',
 **Workflow**
 
 *Keep `order_date` feature*
-```{r}
+```{r index-91}
 wflw_spec_nnetar_tune_f <- workflow() %>% 
                            add_model(model_spec_nnetar_tune) %>% 
                            add_recipe(recipe_spec)
 ```
 
 **Tuning Grid 1**
-```{r}
+```{r index-92}
 grid_spec_nnetar_f_1 <- grid_latin_hypercube(parameters(model_spec_nnetar_tune),
                                              size = 20)
 ```
 
 **Tuning Round 1**
-```{r, results='hide', cache=TRUE}
+```{r index-93, results='hide', cache=TRUE}
 set.seed(321)
 tune_results_nnetar_f <- wflw_spec_nnetar_tune_f %>% 
                          tune_grid(resamples = resamples_tscv,
@@ -1351,12 +1352,12 @@ tune_results_nnetar_f <- wflw_spec_nnetar_tune_f %>%
 ```
 
 **Results Table 1**
-```{r}
+```{r index-94}
 tune_results_nnetar_f %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 1**
-```{r, out.width='70%' }
+```{r index-95, out.width='70%' }
  tune_results_nnetar_f %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1365,7 +1366,7 @@ tune_results_nnetar_f %>% show_best('rmse', n = 10)
 ```
 
 **Tuning Grid 2**
-```{r }
+```{r index-96 }
 set.seed(321)
 grid_spec_nnetar_f_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
                                              seasonal_ar(range = c(0,2)),
@@ -1376,7 +1377,7 @@ grid_spec_nnetar_f_2 <- grid_latin_hypercube(non_seasonal_ar(range = c(1,1)),
 ```
 
 **Tuning Round 2**
-```{r, cache=TRUE}
+```{r index-97, cache=TRUE}
 set.seed(321)
 tune_results_nnetar_f_2 <- wflw_spec_nnetar_tune_f %>% 
                            tune_grid(resamples = resamples_tscv,
@@ -1385,12 +1386,12 @@ tune_results_nnetar_f_2 <- wflw_spec_nnetar_tune_f %>%
 ```
 
 **Results Table 2**
-```{r}
+```{r index-98}
 tune_results_nnetar_f_2 %>% show_best('rmse', n = 10)
 ```
 
 **Results Plot 2**
-```{r, out.width='50%'}
+```{r index-99, out.width='50%'}
 tune_results_nnetar_f_2 %>% 
      autoplot +
      geom_point(aes(color = '#fed9a6'), show.legend = F) +
@@ -1399,7 +1400,7 @@ tune_results_nnetar_f_2 %>%
 ```
 
 **Fit Tuned Workflow on Original Traning Data**
-```{r}
+```{r index-100}
 
 wflw_fit_nnetar_f_tuned <- wflw_spec_nnetar_tune_f %>% 
                            finalize_workflow(select_best(tune_results_nnetar_f_2, 'rmse')) %>% 
@@ -1411,7 +1412,7 @@ wflw_fit_nnetar_f_tuned <- wflw_spec_nnetar_tune_f %>%
 After lots of tuning, we have 6 models that have been tuned and fit back onto the training data. Now let's evaluate their performance on the testing data.
 
 **Collect Tuned Models**
-```{r}
+```{r index-101}
 
 submodels_tuned_tbl <- modeltime_table(wflw_fit_prophet_boost_tuned,
                                        wflw_fit_svm_f_tuned,
@@ -1428,17 +1429,17 @@ submodels_tuned_tbl <- modeltime_table(wflw_fit_prophet_boost_tuned,
 ```
 
 **Calibrate on Test Data**
-```{r}
+```{r index-102}
 calibration_tuned_tbl <- submodels_tuned_tbl %>% modeltime_calibrate(testing(splits))
 ```
 
 **Measure Accuracy**
-```{r}
+```{r index-103}
 calibration_tuned_tbl %>% modeltime_accuracy() %>% arrange(rmse) 
 ```
 
 **Visualize Fit on Test Data**
-```{r Tuned Models fit on testing(splits), fig.height=6, fig.width=16}
+```{r Tuned-Models-fit-testing-splits, fig.height=6, fig.width=16}
 calibration_tuned_tbl %>% 
    modeltime_forecast(new_data    = testing(splits),
                       actual_data = filter_by_time(data_prepared_tbl, .start_date = "2018-09"),
@@ -1456,7 +1457,7 @@ calibration_tuned_tbl %>%
 The hyperparameter tuning helped the performance of some models, at least regarding fit on the testing data. I could do some more work tuning, but lets move forward and forecast future sales with these tuned models. We need to refit the models on the entire dataset now, not just the training or testing data.  Once refit, we can forecast daily sales for the next 84 days. 
 
 **Refit on All Data**
-```{r}
+```{r index-104}
 refit_tbl <- calibration_tuned_tbl %>% 
              modeltime_refit(data = data_prepared_tbl)
 ```
@@ -1464,7 +1465,7 @@ refit_tbl <- calibration_tuned_tbl %>%
 After refitting, we can un-transform the data using those transformation parameters we saved way up top and visualize our models on a true y-axis of sales.
 
 **Visualizing Sales Forecast with 6 Tuned-Models Zoomed In**
-```{r, fig.height=8, fig.width=16}
+```{r index-105, fig.height=8, fig.width=16}
 refit_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl,
@@ -1488,7 +1489,7 @@ refit_tbl %>%
 ```
 
 **Visualizing Sales Forecast with 6 Tuned-Models Zoomed Out**
-```{r, fig.height=8, fig.width=16}
+```{r index-106, fig.height=8, fig.width=16}
 refit_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl,
@@ -1516,28 +1517,28 @@ refit_tbl %>%
 There's plenty more we could do to improve these models, but the last thing I'll show here is a quick and easy weighted model. Instead of using all 6 tuned models individually, I wanted to give the best performing tuned models a scalable weight and make 1 weighted ensemble model. My best fitting model was `SVM-no_fourier-tuned`, the worst fitting was `PROPHET_XGBOOST-tuned`.  My weights ranged from 10 for the best to 5 for the worst.  
 
 **Weighted Ensemble Model**
-```{r}
+```{r index-107}
 calibration_tuned_tbl %>% modeltime_accuracy() %>% arrange(rmse) 
 ```
-```{r}
+```{r index-108}
 weight_ensemble_tbl <- calibration_tuned_tbl %>%  
                        ensemble_weighted(loadings = c(5,7,10,6,8,9)) %>% 
                        modeltime_table()
 ```
 
 **Calibrate Accuracy of Weighted Ensemble Model**
-```{r}
+```{r index-109}
 weight_ensemble_tbl %>% modeltime_accuracy(testing(splits))
 ```
 
 **Refit Ensemble on All Data**
-```{r}
+```{r index-110}
 refit_weight_tbl <- weight_ensemble_tbl %>% 
                     modeltime_refit(data = data_prepared_tbl)
 ```
 
 **Visualizing Sales Forecast with Ensemble Model**
-```{r Ensemble Forecast, fig.height=8, fig.width=16}
+```{r Ensemble-Forecast, fig.height=8, fig.width=16}
 refit_weight_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl)  %>%  
@@ -1560,7 +1561,7 @@ refit_weight_tbl %>%
 If you need the actual forecast values, be sure to un-transform and save any individual model or ensemble data. These files have a lot of information, so they can get quite large.  
 
 **Collect Un-Transformed Forecast Data**
-```{r}
+```{r index-111}
 forecast_tbl_final <- refit_weight_tbl %>% 
    modeltime_forecast(new_data    = forecast_tbl,
                       actual_data = data_prepared_tbl)  %>%  
@@ -1573,7 +1574,7 @@ forecast_tbl_final <- refit_weight_tbl %>%
                                                        offset      = offset))) %>% 
   filter(.key == 'prediction')
 ```
-```{r}
+```{r index-112}
 forecast_tbl_final
 ```
 

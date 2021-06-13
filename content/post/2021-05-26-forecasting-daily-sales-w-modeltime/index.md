@@ -16,12 +16,13 @@ tags:
    - time-series
    - tidyverse
    - R
-summary: "In my introductory blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist."
+summary: "In my first blog post, I use the time-series modeling package {modeltime} and a Kaggle sales dataset to forecast 3 months of daily sales. This is a {tidymodels} approach with with a {modeltime} twist."
 featured: "featured-hex-modeltime.jpeg"
 image:
    caption: ''
    focal_point: ''
    preview_only: true
+output: md_document
 ---
 
 -   [🥅 Project Goal](#goal)
@@ -60,24 +61,24 @@ using a simple SARIMAX model.
 
     ## Rows: 9,800
     ## Columns: 18
-    ## $ `Row ID`        <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 1…
-    ## $ `Order ID`      <chr> "CA-2017-152156", "CA-2017-152156", "CA-2017-138…
-    ## $ `Order Date`    <chr> "08/11/2017", "08/11/2017", "12/06/2017", "11/10…
-    ## $ `Ship Date`     <chr> "11/11/2017", "11/11/2017", "16/06/2017", "18/10…
-    ## $ `Ship Mode`     <chr> "Second Class", "Second Class", "Second Class", …
-    ## $ `Customer ID`   <chr> "CG-12520", "CG-12520", "DV-13045", "SO-20335", …
-    ## $ `Customer Name` <chr> "Claire Gute", "Claire Gute", "Darrin Van Huff",…
-    ## $ Segment         <chr> "Consumer", "Consumer", "Corporate", "Consumer",…
-    ## $ Country         <chr> "United States", "United States", "United States…
-    ## $ City            <chr> "Henderson", "Henderson", "Los Angeles", "Fort L…
-    ## $ State           <chr> "Kentucky", "Kentucky", "California", "Florida",…
-    ## $ `Postal Code`   <dbl> 42420, 42420, 90036, 33311, 33311, 90032, 90032,…
-    ## $ Region          <chr> "South", "South", "West", "South", "South", "Wes…
-    ## $ `Product ID`    <chr> "FUR-BO-10001798", "FUR-CH-10000454", "OFF-LA-10…
-    ## $ Category        <chr> "Furniture", "Furniture", "Office Supplies", "Fu…
-    ## $ `Sub-Category`  <chr> "Bookcases", "Chairs", "Labels", "Tables", "Stor…
-    ## $ `Product Name`  <chr> "Bush Somerset Collection Bookcase", "Hon Deluxe…
-    ## $ Sales           <dbl> 261.9600, 731.9400, 14.6200, 957.5775, 22.3680, …
+    ## $ `Row ID`        <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2…
+    ## $ `Order ID`      <chr> "CA-2017-152156", "CA-2017-152156", "CA-2017-138688", "US-2016-10896…
+    ## $ `Order Date`    <chr> "08/11/2017", "08/11/2017", "12/06/2017", "11/10/2016", "11/10/2016"…
+    ## $ `Ship Date`     <chr> "11/11/2017", "11/11/2017", "16/06/2017", "18/10/2016", "18/10/2016"…
+    ## $ `Ship Mode`     <chr> "Second Class", "Second Class", "Second Class", "Standard Class", "S…
+    ## $ `Customer ID`   <chr> "CG-12520", "CG-12520", "DV-13045", "SO-20335", "SO-20335", "BH-1171…
+    ## $ `Customer Name` <chr> "Claire Gute", "Claire Gute", "Darrin Van Huff", "Sean O'Donnell", "…
+    ## $ Segment         <chr> "Consumer", "Consumer", "Corporate", "Consumer", "Consumer", "Consum…
+    ## $ Country         <chr> "United States", "United States", "United States", "United States", …
+    ## $ City            <chr> "Henderson", "Henderson", "Los Angeles", "Fort Lauderdale", "Fort La…
+    ## $ State           <chr> "Kentucky", "Kentucky", "California", "Florida", "Florida", "Califor…
+    ## $ `Postal Code`   <dbl> 42420, 42420, 90036, 33311, 33311, 90032, 90032, 90032, 90032, 90032…
+    ## $ Region          <chr> "South", "South", "West", "South", "South", "West", "West", "West", …
+    ## $ `Product ID`    <chr> "FUR-BO-10001798", "FUR-CH-10000454", "OFF-LA-10000240", "FUR-TA-100…
+    ## $ Category        <chr> "Furniture", "Furniture", "Office Supplies", "Furniture", "Office Su…
+    ## $ `Sub-Category`  <chr> "Bookcases", "Chairs", "Labels", "Tables", "Storage", "Furnishings",…
+    ## $ `Product Name`  <chr> "Bush Somerset Collection Bookcase", "Hon Deluxe Fabric Upholstered …
+    ## $ Sales           <dbl> 261.9600, 731.9400, 14.6200, 957.5775, 22.3680, 48.8600, 7.2800, 907…
 
 After a little digging a few things become obvious. There are two date
 variables, but lets only use `Order Date` going forward. It seems
@@ -96,20 +97,20 @@ remove what we definitely don’t need.
 
     ## Rows: 9,800
     ## Columns: 14
-    ## $ row_id        <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21…
-    ## $ order_date    <date> 2017-11-08, 2017-11-08, 2017-06-12, 2016-10-11, 2016-10-11, 2015-06-09, …
-    ## $ customer_id   <fct> CG-12520, CG-12520, DV-13045, SO-20335, SO-20335, BH-11710, BH-11710, BH-…
-    ## $ customer_name <fct> Claire Gute, Claire Gute, Darrin Van Huff, Sean O'Donnell, Sean O'Donnell…
-    ## $ segment       <fct> Consumer, Consumer, Corporate, Consumer, Consumer, Consumer, Consumer, Co…
-    ## $ city          <fct> Henderson, Henderson, Los Angeles, Fort Lauderdale, Fort Lauderdale, Los …
-    ## $ state         <fct> Kentucky, Kentucky, California, Florida, Florida, California, California,…
-    ## $ postal_code   <fct> 42420, 42420, 90036, 33311, 33311, 90032, 90032, 90032, 90032, 90032, 900…
-    ## $ region        <fct> South, South, West, South, South, West, West, West, West, West, West, Wes…
-    ## $ product_id    <fct> FUR-BO-10001798, FUR-CH-10000454, OFF-LA-10000240, FUR-TA-10000577, OFF-S…
-    ## $ category      <fct> Furniture, Furniture, Office Supplies, Furniture, Office Supplies, Furnit…
-    ## $ sub_category  <fct> Bookcases, Chairs, Labels, Tables, Storage, Furnishings, Art, Phones, Bin…
-    ## $ product_name  <fct> "Bush Somerset Collection Bookcase", "Hon Deluxe Fabric Upholstered Stack…
-    ## $ sales         <dbl> 261.9600, 731.9400, 14.6200, 957.5775, 22.3680, 48.8600, 7.2800, 907.1520…
+    ## $ row_id        <dbl> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,…
+    ## $ order_date    <date> 2017-11-08, 2017-11-08, 2017-06-12, 2016-10-11, 2016-10-11, 2015-06-0…
+    ## $ customer_id   <fct> CG-12520, CG-12520, DV-13045, SO-20335, SO-20335, BH-11710, BH-11710, …
+    ## $ customer_name <fct> Claire Gute, Claire Gute, Darrin Van Huff, Sean O'Donnell, Sean O'Donn…
+    ## $ segment       <fct> Consumer, Consumer, Corporate, Consumer, Consumer, Consumer, Consumer,…
+    ## $ city          <fct> Henderson, Henderson, Los Angeles, Fort Lauderdale, Fort Lauderdale, L…
+    ## $ state         <fct> Kentucky, Kentucky, California, Florida, Florida, California, Californ…
+    ## $ postal_code   <fct> 42420, 42420, 90036, 33311, 33311, 90032, 90032, 90032, 90032, 90032, …
+    ## $ region        <fct> South, South, West, South, South, West, West, West, West, West, West, …
+    ## $ product_id    <fct> FUR-BO-10001798, FUR-CH-10000454, OFF-LA-10000240, FUR-TA-10000577, OF…
+    ## $ category      <fct> Furniture, Furniture, Office Supplies, Furniture, Office Supplies, Fur…
+    ## $ sub_category  <fct> Bookcases, Chairs, Labels, Tables, Storage, Furnishings, Art, Phones, …
+    ## $ product_name  <fct> "Bush Somerset Collection Bookcase", "Hon Deluxe Fabric Upholstered St…
+    ## $ sales         <dbl> 261.9600, 731.9400, 14.6200, 957.5775, 22.3680, 48.8600, 7.2800, 907.1…
 
 What period of time does this data cover?
 
@@ -161,7 +162,7 @@ business, looking at total `orders` and total `sales`.
                  color="white", size=3.5, fontface = 'bold',
                  hjust = -0.1, vjust = 0.4)
 
-![](index_files/figure-markdown_strict/Sales%20by%20State/Region-1.png)
+![](index_files/figure-markdown_strict/Sales-by-State-Region-1.png)
 
 Looks like the do business throughout the US, with the most business
 coming from California. They probably do most of their business from
@@ -243,7 +244,7 @@ Lets also look at number of `orders` and `sales` grouped by
                  color       = 'white',
                  alpha       = 0.7)
 
-![](index_files/figure-markdown_strict/Orders%20&%20Sales%20in%20log($)%20per%20Customer%20by%20Category/Segment-1.png)
+![](index_files/figure-markdown_strict/Orders-&-Sales-in-log($)-per-Customer-by-Category-Segment-1.png)
 
 Their sales are spread pretty evenly between these categories. More
 orders are for office supplies, but their largest sales are for
@@ -283,7 +284,7 @@ time-series.
                         .y_lab        = "$") +
        theme_dark_grey()
 
-![](index_files/figure-markdown_strict/Daily%20Total%20Sales-1.png)
+![](index_files/figure-markdown_strict/Daily-Total-Sales-1.png)
 
 There are no days with 0 orders/sales. But in our EDA we noticed gaps in
 the data. This data spans just under 4 years, but we only have 1,230
@@ -303,8 +304,8 @@ days.
 
     ## Rows: 1,458
     ## Columns: 2
-    ## $ order_date <date> 2015-01-03, 2015-01-04, 2015-01-05, 2015-01-06, 2015…
-    ## $ sales      <dbl> 16.448, 288.060, 19.536, 4407.100, 87.158, 0.000, 40.…
+    ## $ order_date <date> 2015-01-03, 2015-01-04, 2015-01-05, 2015-01-06, 2015-01-07, 2015-01-08, …
+    ## $ sales      <dbl> 16.448, 288.060, 19.536, 4407.100, 87.158, 0.000, 40.544, 54.830, 9.940, …
 
 1,458 rows, great! Now we have a full 4-year daily dataset with no
 missing dates.
@@ -346,7 +347,7 @@ Let’s look at our new padded & transformed time-series.
                         .y_lab        = "Sales") +
        theme_dark_grey()
 
-![](index_files/figure-markdown_strict/Daily%20Total%20Sales%20(Padded%20&%20Transformed)-1.png)
+![](index_files/figure-markdown_strict/Daily-Total-Sales-Padded-Transformed-1.png)
 
 We might want to add lags, rolling lags, and/or fourier-series features
 that could help our forecast. This is way to add features to regress on
@@ -374,7 +375,7 @@ Let’s look at ACF/PACF plots to see if any periods look usable.
                  color = "white",
                  angle = 55)
 
-![](index_files/figure-markdown_strict/Lag%20Diagnostics-1.png)
+![](index_files/figure-markdown_strict/Lag-Diagnostics-1.png)
 
 Clearly there is a strong weekly correlation of sales vs sales 7d, 14d,
 21d, … later. The Partial Auto Correlation Features (PACF) de-weights
@@ -421,43 +422,43 @@ the process.
 
     ## Rows: 1,542
     ## Columns: 37
-    ## $ rowid                         <int> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,…
-    ## $ order_date                    <date> 2015-01-03, 2015-01-04, 2015-01-0…
-    ## $ sales_trans                   <dbl> -1.002789645, -0.018295287, -0.945…
-    ## $ fourier_order_date_sin7_K1    <dbl> 9.749279e-01, 4.338837e-01, -4.338…
-    ## $ fourier_order_date_cos7_K1    <dbl> -0.2225209, -0.9009689, -0.9009689…
-    ## $ fourier_order_date_sin7_K2    <dbl> -4.338837e-01, -7.818315e-01, 7.81…
-    ## $ fourier_order_date_cos7_K2    <dbl> -0.9009689, 0.6234898, 0.6234898, …
-    ## $ fourier_order_date_sin7_K3    <dbl> -7.818315e-01, 9.749279e-01, -9.74…
-    ## $ fourier_order_date_cos7_K3    <dbl> 0.6234898, -0.2225209, -0.2225209,…
-    ## $ fourier_order_date_sin14_K1   <dbl> 7.818315e-01, 9.749279e-01, 9.7492…
-    ## $ fourier_order_date_cos14_K1   <dbl> 0.6234898, 0.2225209, -0.2225209, …
-    ## $ fourier_order_date_sin14_K2   <dbl> 9.749279e-01, 4.338837e-01, -4.338…
-    ## $ fourier_order_date_cos14_K2   <dbl> -0.2225209, -0.9009689, -0.9009689…
-    ## $ fourier_order_date_sin14_K3   <dbl> 4.338837e-01, -7.818315e-01, -7.81…
-    ## $ fourier_order_date_cos14_K3   <dbl> -0.9009689, -0.6234898, 0.6234898,…
-    ## $ fourier_order_date_sin21_K1   <dbl> -9.972038e-01, -9.308737e-01, -7.8…
-    ## $ fourier_order_date_cos21_K1   <dbl> 0.07473009, 0.36534102, 0.62348980…
-    ## $ fourier_order_date_sin21_K2   <dbl> -1.490423e-01, -6.801727e-01, -9.7…
-    ## $ fourier_order_date_cos21_K2   <dbl> -0.98883083, -0.73305187, -0.22252…
-    ## $ fourier_order_date_sin21_K3   <dbl> 9.749279e-01, 4.338837e-01, -4.338…
-    ## $ fourier_order_date_cos21_K3   <dbl> -0.2225209, -0.9009689, -0.9009689…
-    ## $ fourier_order_date_sin28_K1   <dbl> 4.338837e-01, 6.234898e-01, 7.8183…
-    ## $ fourier_order_date_cos28_K1   <dbl> 9.009689e-01, 7.818315e-01, 6.2348…
-    ## $ fourier_order_date_sin28_K2   <dbl> 7.818315e-01, 9.749279e-01, 9.7492…
-    ## $ fourier_order_date_cos28_K2   <dbl> 0.6234898, 0.2225209, -0.2225209, …
-    ## $ fourier_order_date_sin28_K3   <dbl> 9.749279e-01, 9.009689e-01, 4.3388…
-    ## $ fourier_order_date_cos28_K3   <dbl> 2.225209e-01, -4.338837e-01, -9.00…
-    ## $ fourier_order_date_sin357_K1  <dbl> 0.2778924, 0.2947552, 0.3115267, 0…
-    ## $ fourier_order_date_cos357_K1  <dbl> 0.9606122, 0.9555728, 0.9502374, 0…
-    ## $ fourier_order_date_sin357_K2  <dbl> 0.5338936, 0.5633201, 0.5920486, 0…
-    ## $ fourier_order_date_cos357_K2  <dbl> 0.8455517, 0.8262388, 0.8059022, 0…
-    ## $ fourier_order_date_sin357_K3  <dbl> 0.7478370, 0.7818315, 0.8136468, 0…
-    ## $ fourier_order_date_cos357_K3  <dbl> 0.66388234, 0.62348980, 0.58135949…
-    ## $ lag_sales_trans_lag84         <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA…
-    ## $ lag_sales_trans_lag84_roll_30 <dbl> NaN, NaN, NaN, NaN, NaN, NaN, NaN,…
-    ## $ lag_sales_trans_lag84_roll_60 <dbl> NaN, NaN, NaN, NaN, NaN, NaN, NaN,…
-    ## $ lag_sales_trans_lag84_roll_90 <dbl> NaN, NaN, NaN, NaN, NaN, NaN, NaN,…
+    ## $ rowid                         <int> 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,…
+    ## $ order_date                    <date> 2015-01-03, 2015-01-04, 2015-01-05, 2015-01-06, 2015-…
+    ## $ sales_trans                   <dbl> -1.002789645, -0.018295287, -0.945789456, 0.984639996,…
+    ## $ fourier_order_date_sin7_K1    <dbl> 9.749279e-01, 4.338837e-01, -4.338837e-01, -9.749279e-…
+    ## $ fourier_order_date_cos7_K1    <dbl> -0.2225209, -0.9009689, -0.9009689, -0.2225209, 0.6234…
+    ## $ fourier_order_date_sin7_K2    <dbl> -4.338837e-01, -7.818315e-01, 7.818315e-01, 4.338837e-…
+    ## $ fourier_order_date_cos7_K2    <dbl> -0.9009689, 0.6234898, 0.6234898, -0.9009689, -0.22252…
+    ## $ fourier_order_date_sin7_K3    <dbl> -7.818315e-01, 9.749279e-01, -9.749279e-01, 7.818315e-…
+    ## $ fourier_order_date_cos7_K3    <dbl> 0.6234898, -0.2225209, -0.2225209, 0.6234898, -0.90096…
+    ## $ fourier_order_date_sin14_K1   <dbl> 7.818315e-01, 9.749279e-01, 9.749279e-01, 7.818315e-01…
+    ## $ fourier_order_date_cos14_K1   <dbl> 0.6234898, 0.2225209, -0.2225209, -0.6234898, -0.90096…
+    ## $ fourier_order_date_sin14_K2   <dbl> 9.749279e-01, 4.338837e-01, -4.338837e-01, -9.749279e-…
+    ## $ fourier_order_date_cos14_K2   <dbl> -0.2225209, -0.9009689, -0.9009689, -0.2225209, 0.6234…
+    ## $ fourier_order_date_sin14_K3   <dbl> 4.338837e-01, -7.818315e-01, -7.818315e-01, 4.338837e-…
+    ## $ fourier_order_date_cos14_K3   <dbl> -0.9009689, -0.6234898, 0.6234898, 0.9009689, -0.22252…
+    ## $ fourier_order_date_sin21_K1   <dbl> -9.972038e-01, -9.308737e-01, -7.818315e-01, -5.633201…
+    ## $ fourier_order_date_cos21_K1   <dbl> 0.07473009, 0.36534102, 0.62348980, 0.82623877, 0.9555…
+    ## $ fourier_order_date_sin21_K2   <dbl> -1.490423e-01, -6.801727e-01, -9.749279e-01, -9.308737…
+    ## $ fourier_order_date_cos21_K2   <dbl> -0.98883083, -0.73305187, -0.22252093, 0.36534102, 0.8…
+    ## $ fourier_order_date_sin21_K3   <dbl> 9.749279e-01, 4.338837e-01, -4.338837e-01, -9.749279e-…
+    ## $ fourier_order_date_cos21_K3   <dbl> -0.2225209, -0.9009689, -0.9009689, -0.2225209, 0.6234…
+    ## $ fourier_order_date_sin28_K1   <dbl> 4.338837e-01, 6.234898e-01, 7.818315e-01, 9.009689e-01…
+    ## $ fourier_order_date_cos28_K1   <dbl> 9.009689e-01, 7.818315e-01, 6.234898e-01, 4.338837e-01…
+    ## $ fourier_order_date_sin28_K2   <dbl> 7.818315e-01, 9.749279e-01, 9.749279e-01, 7.818315e-01…
+    ## $ fourier_order_date_cos28_K2   <dbl> 0.6234898, 0.2225209, -0.2225209, -0.6234898, -0.90096…
+    ## $ fourier_order_date_sin28_K3   <dbl> 9.749279e-01, 9.009689e-01, 4.338837e-01, -2.225209e-0…
+    ## $ fourier_order_date_cos28_K3   <dbl> 2.225209e-01, -4.338837e-01, -9.009689e-01, -9.749279e…
+    ## $ fourier_order_date_sin357_K1  <dbl> 0.2778924, 0.2947552, 0.3115267, 0.3282017, 0.3447751,…
+    ## $ fourier_order_date_cos357_K1  <dbl> 0.9606122, 0.9555728, 0.9502374, 0.9446077, 0.9386853,…
+    ## $ fourier_order_date_sin357_K2  <dbl> 0.5338936, 0.5633201, 0.5920486, 0.6200437, 0.6472706,…
+    ## $ fourier_order_date_cos357_K2  <dbl> 0.84555168, 0.82623877, 0.80590223, 0.78456725, 0.7622…
+    ## $ fourier_order_date_sin357_K3  <dbl> 0.7478370, 0.7818315, 0.8136468, 0.8431944, 0.8703918,…
+    ## $ fourier_order_date_cos357_K3  <dbl> 0.66388234, 0.62348980, 0.58135949, 0.53760882, 0.4923…
+    ## $ lag_sales_trans_lag84         <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA…
+    ## $ lag_sales_trans_lag84_roll_30 <dbl> NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN,…
+    ## $ lag_sales_trans_lag84_roll_60 <dbl> NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN,…
+    ## $ lag_sales_trans_lag84_roll_90 <dbl> NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN, NaN,…
 
 The time-series now includes lag, rolling\_lag and fourier-series data
 in future forecast dates. If these features help model accuracy on the
@@ -476,7 +477,7 @@ look at the lag and rolling lags data.
        theme_dark_grey() +
        scale_color_manual(values = c("#cccccc","#db0000", "#0099ff", "#00ff99", "#ffffcc"))
 
-![](index_files/figure-markdown_strict/Lagged%20Rolling%20Averages-1.png)
+![](index_files/figure-markdown_strict/Lagged-Rolling-Averages-1.png)
 
 Notice each of the first 84 days lacks at least some of the lag/rolling
 lag features. We can’t use these days in our testing/training splits.
@@ -1585,7 +1586,7 @@ cross-validation. That’ll make sense soon.
        theme_dark_grey() +
        scale_color_manual(values = c("#cccccc", "#db0000"))
 
-![](index_files/figure-markdown_strict/Initial%20Cross%20Validation%20Plan-1.png)
+![](index_files/figure-markdown_strict/Initial-Cross-Validation-Plan-1.png)
 
 `{modeltime}` was built to complement `{tidymodels}`, so the recipes,
 workflows, hyperparameter tuning, etc. all work the same.
@@ -1630,64 +1631,64 @@ variables and dummy the nominal variables.
 
     ## Rows: 1,290
     ## Columns: 58
-    ## $ order_date                         <date> 2015-03-28, 2015-03-29, 2015…
-    ## $ lag_sales_trans_lag84              <dbl> -1.002789645, -0.018295287, -…
-    ## $ lag_sales_trans_lag84_roll_30      <dbl> -0.6456698, -0.6031017, -0.52…
-    ## $ lag_sales_trans_lag84_roll_60      <dbl> -0.6811990, -0.6723552, -0.66…
-    ## $ lag_sales_trans_lag84_roll_90      <dbl> -0.7196151, -0.7196938, -0.74…
-    ## $ sales_trans                        <dbl> 0.56999672, 0.38250608, 0.481…
-    ## $ order_date_index.num               <dbl> -1.730038, -1.727353, -1.7246…
-    ## $ order_date_year                    <dbl> -1.419664, -1.419664, -1.4196…
-    ## $ order_date_half                    <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
-    ## $ order_date_quarter                 <int> 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,…
-    ## $ order_date_month                   <int> 3, 3, 3, 3, 4, 4, 4, 4, 4, 4,…
-    ## $ order_date_day                     <dbl> 1.38891404, 1.50196926, 1.615…
-    ## $ order_date_wday                    <int> 7, 1, 2, 3, 4, 5, 6, 7, 1, 2,…
-    ## $ order_date_mday                    <dbl> 1.38891404, 1.50196926, 1.615…
-    ## $ order_date_qday                    <dbl> 1.5404251, 1.5780733, 1.61572…
-    ## $ order_date_yday                    <dbl> -0.9656001, -0.9555644, -0.94…
-    ## $ order_date_mweek                   <int> 4, 4, 5, 5, 5, 1, 1, 1, 1, 2,…
-    ## $ order_date_week                    <int> 13, 13, 13, 13, 13, 14, 14, 1…
-    ## $ order_date_week2                   <int> 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,…
-    ## $ order_date_week3                   <int> 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,…
-    ## $ order_date_week4                   <int> 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,…
-    ## $ order_date_mday7                   <dbl> 1.6685116, 1.6685116, 1.66851…
-    ## $ order_date_month.lbl_01            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_02            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_03            <dbl> 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_04            <dbl> 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,…
-    ## $ order_date_month.lbl_05            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_06            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_07            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_08            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_09            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_10            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_11            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_month.lbl_12            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_wday.lbl_1              <dbl> 0, 1, 0, 0, 0, 0, 0, 0, 1, 0,…
-    ## $ order_date_wday.lbl_2              <dbl> 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,…
-    ## $ order_date_wday.lbl_3              <dbl> 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_wday.lbl_4              <dbl> 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,…
-    ## $ order_date_wday.lbl_5              <dbl> 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,…
-    ## $ order_date_wday.lbl_6              <dbl> 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,…
-    ## $ order_date_wday.lbl_7              <dbl> 1, 0, 0, 0, 0, 0, 0, 1, 0, 0,…
-    ## $ order_date_USChristmasDay          <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USColumbusDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USCPulaskisBirthday     <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USDecorationMemorialDay <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USElectionDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USGoodFriday            <dbl> 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,…
-    ## $ order_date_USInaugurationDay       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USIndependenceDay       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USLaborDay              <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USLincolnsBirthday      <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USMemorialDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USMLKingsBirthday       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USNewYearsDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USPresidentsDay         <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USThanksgivingDay       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USVeteransDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-    ## $ order_date_USWashingtonsBirthday   <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
+    ## $ order_date                         <date> 2015-03-28, 2015-03-29, 2015-03-30, 2015-03-31, …
+    ## $ lag_sales_trans_lag84              <dbl> -1.002789645, -0.018295287, -0.945789456, 0.98463…
+    ## $ lag_sales_trans_lag84_roll_30      <dbl> -0.6456698, -0.6031017, -0.5258254, -0.6035450, -…
+    ## $ lag_sales_trans_lag84_roll_60      <dbl> -0.6811990, -0.6723552, -0.6606234, -0.7000903, -…
+    ## $ lag_sales_trans_lag84_roll_90      <dbl> -0.7196151, -0.7196938, -0.7464189, -0.7394241, -…
+    ## $ sales_trans                        <dbl> 0.56999672, 0.38250608, 0.48107019, 0.67053534, -…
+    ## $ order_date_index.num               <dbl> -1.730038, -1.727353, -1.724669, -1.721985, -1.71…
+    ## $ order_date_year                    <dbl> -1.419664, -1.419664, -1.419664, -1.419664, -1.41…
+    ## $ order_date_half                    <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+    ## $ order_date_quarter                 <int> 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2…
+    ## $ order_date_month                   <int> 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4…
+    ## $ order_date_day                     <dbl> 1.38891404, 1.50196926, 1.61502448, 1.72807970, -…
+    ## $ order_date_wday                    <int> 7, 1, 2, 3, 4, 5, 6, 7, 1, 2, 3, 4, 5, 6, 7, 1, 2…
+    ## $ order_date_mday                    <dbl> 1.38891404, 1.50196926, 1.61502448, 1.72807970, -…
+    ## $ order_date_qday                    <dbl> 1.5404251, 1.5780733, 1.6157216, 1.6533698, -1.69…
+    ## $ order_date_yday                    <dbl> -0.9656001, -0.9555644, -0.9455288, -0.9354932, -…
+    ## $ order_date_mweek                   <int> 4, 4, 5, 5, 5, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3…
+    ## $ order_date_week                    <int> 13, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14, 1…
+    ## $ order_date_week2                   <int> 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1…
+    ## $ order_date_week3                   <int> 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0…
+    ## $ order_date_week4                   <int> 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3…
+    ## $ order_date_mday7                   <dbl> 1.6685116, 1.6685116, 1.6685116, 1.6685116, -1.40…
+    ## $ order_date_month.lbl_01            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_02            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_03            <dbl> 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_04            <dbl> 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+    ## $ order_date_month.lbl_05            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_06            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_07            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_08            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_09            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_10            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_11            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_month.lbl_12            <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_wday.lbl_1              <dbl> 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0…
+    ## $ order_date_wday.lbl_2              <dbl> 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1…
+    ## $ order_date_wday.lbl_3              <dbl> 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_wday.lbl_4              <dbl> 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0…
+    ## $ order_date_wday.lbl_5              <dbl> 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0…
+    ## $ order_date_wday.lbl_6              <dbl> 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0…
+    ## $ order_date_wday.lbl_7              <dbl> 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0…
+    ## $ order_date_USChristmasDay          <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USColumbusDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USCPulaskisBirthday     <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USDecorationMemorialDay <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USElectionDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USGoodFriday            <dbl> 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USInaugurationDay       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USIndependenceDay       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USLaborDay              <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USLincolnsBirthday      <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USMemorialDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USMLKingsBirthday       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USNewYearsDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USPresidentsDay         <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USThanksgivingDay       <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USVeteransDay           <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+    ## $ order_date_USWashingtonsBirthday   <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
 
 Even without Fourier-Series, look at all the features that may help us
 model future sales. We started with just `order_date`.
@@ -2513,7 +2514,7 @@ perform.
        theme_dark_grey() +
        scale_color_todd_dark_bright()
 
-![](index_files/figure-markdown_strict/Models%20fit%20on%20testing(splits)-1.png)
+![](index_files/figure-markdown_strict/Models-fit-testing-splits-1.png)
 
 Not bad. But we can tune these models for a better fit before
 forecasting.
@@ -2540,7 +2541,7 @@ for models that need to train on sequential or ordered data. You’ll see.
        theme_dark_grey() +
        scale_color_manual(values = c("#cccccc", "#db0000"))
 
-![](index_files/figure-markdown_strict/K-fold%20CV%20Plan-1.png)
+![](index_files/figure-markdown_strict/K-fold-CV-Plan-1.png)
 
 **Time-Series CV**
 
@@ -2562,7 +2563,7 @@ for models that need to train on sequential or ordered data. You’ll see.
        theme_dark_grey() +
        scale_color_manual(values = c("#cccccc", "#db0000"))
 
-![](index_files/figure-markdown_strict/Time_Series%20CV%20Plan-1.png)
+![](index_files/figure-markdown_strict/Time_Series-CV-Plan-1.png)
 
 I did 2-3 rounds of tuning for all 6 models, I’ll show the first and
 last round of tuning for just 2 of the 6 models. We’ll still compare
@@ -2626,18 +2627,18 @@ tuning with many tuning parameters could take ~8 minutes to run on my
     tune_results_svm %>% show_best('rmse', n = 10)
 
     ## # A tibble: 10 x 8
-    ##        cost rbf_sigma .metric .estimator  mean     n std_err .config      
-    ##       <dbl>     <dbl> <chr>   <chr>      <dbl> <int>   <dbl> <chr>        
-    ##  1  6.27      3.16e-3 rmse    standard   0.820     6  0.0252 Preprocessor…
-    ##  2 30.1       2.26e-4 rmse    standard   0.855     6  0.0301 Preprocessor…
-    ##  3  0.195     2.50e-2 rmse    standard   0.855     6  0.0310 Preprocessor…
-    ##  4  3.38      4.04e-4 rmse    standard   0.875     6  0.0328 Preprocessor…
-    ##  5  0.589     1.20e-3 rmse    standard   0.888     6  0.0329 Preprocessor…
-    ##  6 12.5       4.87e-1 rmse    standard   0.956     6  0.0251 Preprocessor…
-    ##  7 11.2       2.52e-6 rmse    standard   1.01      6  0.0407 Preprocessor…
-    ##  8  0.365     5.40e-5 rmse    standard   1.02      6  0.0412 Preprocessor…
-    ##  9  0.00146   7.02e-2 rmse    standard   1.03      6  0.0425 Preprocessor…
-    ## 10  0.0692    2.55e-5 rmse    standard   1.03      6  0.0424 Preprocessor…
+    ##        cost  rbf_sigma .metric .estimator  mean     n std_err .config              
+    ##       <dbl>      <dbl> <chr>   <chr>      <dbl> <int>   <dbl> <chr>                
+    ##  1  7.38    0.00451    rmse    standard   0.820     6  0.0235 Preprocessor1_Model06
+    ##  2  0.261   0.0151     rmse    standard   0.844     6  0.0298 Preprocessor1_Model05
+    ##  3  2.88    0.00192    rmse    standard   0.848     6  0.0302 Preprocessor1_Model09
+    ##  4  0.480   0.136      rmse    standard   0.924     6  0.0359 Preprocessor1_Model14
+    ##  5 29.5     0.0384     rmse    standard   0.995     6  0.0207 Preprocessor1_Model07
+    ##  6  1.12    0.0000178  rmse    standard   1.02      6  0.0412 Preprocessor1_Model20
+    ##  7  0.0389  0.0000880  rmse    standard   1.03      6  0.0423 Preprocessor1_Model11
+    ##  8  1.62    0.00000122 rmse    standard   1.03      6  0.0424 Preprocessor1_Model10
+    ##  9  0.00284 0.000634   rmse    standard   1.03      6  0.0424 Preprocessor1_Model03
+    ## 10  0.0286  0.643      rmse    standard   1.04      6  0.0425 Preprocessor1_Model19
 
 **Results Plot 1**
 
@@ -2647,7 +2648,7 @@ tuning with many tuning parameters could take ~8 minutes to run on my
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-<img src="index_files/figure-markdown_strict/unnamed-chunk-51-1.png" width="50%" />
+<img src="index_files/figure-markdown_strict/index-51-1.png" width="50%" />
 
 The range of the rmse and rsq y-axis is wide-enough to use a round of
 tuning. Update the grid and do round 2.
@@ -2673,18 +2674,18 @@ tuning. Update the grid and do round 2.
     tune_results_svm_2 %>% show_best('rmse', n = 10)
 
     ## # A tibble: 10 x 8
-    ##     cost rbf_sigma .metric .estimator  mean     n std_err .config         
-    ##    <dbl>     <dbl> <chr>   <chr>      <dbl> <int>   <dbl> <chr>           
-    ##  1 10.3    0.00359 rmse    standard   0.819     6  0.0236 Preprocessor1_M…
-    ##  2 10.7    0.00359 rmse    standard   0.819     6  0.0236 Preprocessor1_M…
-    ##  3  9.59   0.00378 rmse    standard   0.819     6  0.0236 Preprocessor1_M…
-    ##  4 10.2    0.00372 rmse    standard   0.819     6  0.0235 Preprocessor1_M…
-    ##  5 10.8    0.00364 rmse    standard   0.819     6  0.0235 Preprocessor1_M…
-    ##  6 10.4    0.00372 rmse    standard   0.819     6  0.0235 Preprocessor1_M…
-    ##  7  9.20   0.00392 rmse    standard   0.819     6  0.0236 Preprocessor1_M…
-    ##  8  9.76   0.00383 rmse    standard   0.819     6  0.0235 Preprocessor1_M…
-    ##  9  9.46   0.00388 rmse    standard   0.819     6  0.0235 Preprocessor1_M…
-    ## 10  9.87   0.00396 rmse    standard   0.820     6  0.0235 Preprocessor1_M…
+    ##     cost rbf_sigma .metric .estimator  mean     n std_err .config              
+    ##    <dbl>     <dbl> <chr>   <chr>      <dbl> <int>   <dbl> <chr>                
+    ##  1 10.3    0.00359 rmse    standard   0.819     6  0.0236 Preprocessor1_Model07
+    ##  2 10.7    0.00359 rmse    standard   0.819     6  0.0236 Preprocessor1_Model12
+    ##  3  9.59   0.00378 rmse    standard   0.819     6  0.0236 Preprocessor1_Model17
+    ##  4 10.2    0.00372 rmse    standard   0.819     6  0.0235 Preprocessor1_Model18
+    ##  5 10.8    0.00364 rmse    standard   0.819     6  0.0235 Preprocessor1_Model14
+    ##  6 10.4    0.00372 rmse    standard   0.819     6  0.0235 Preprocessor1_Model08
+    ##  7  9.20   0.00392 rmse    standard   0.819     6  0.0236 Preprocessor1_Model19
+    ##  8  9.76   0.00383 rmse    standard   0.819     6  0.0235 Preprocessor1_Model13
+    ##  9  9.46   0.00388 rmse    standard   0.819     6  0.0235 Preprocessor1_Model04
+    ## 10  9.87   0.00396 rmse    standard   0.820     6  0.0235 Preprocessor1_Model06
 
 **Results Plot 2**
 
@@ -2694,7 +2695,7 @@ tuning. Update the grid and do round 2.
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-<img src="index_files/figure-markdown_strict/unnamed-chunk-55-1.png" width="50%" />
+<img src="index_files/figure-markdown_strict/index-55-1.png" width="50%" />
 
 Good enough. Look at the y-axis. Another round of tuning won’t make a
 big difference.
@@ -2745,20 +2746,19 @@ big difference.
     tune_results_nnetar_f %>% show_best('rmse', n = 10)
 
     ## # A tibble: 10 x 10
-    ##    non_seasonal_ar seasonal_ar hidden_units  penalty .metric .estimator
-    ##              <int>       <int>        <int>    <dbl> <chr>   <chr>     
-    ##  1               4           1            9 6.10e- 1 rmse    standard  
-    ##  2               2           0            6 4.15e-10 rmse    standard  
-    ##  3               2           0            5 1.44e- 1 rmse    standard  
-    ##  4               3           2            7 7.34e- 7 rmse    standard  
-    ##  5               2           1            6 6.35e- 2 rmse    standard  
-    ##  6               5           1            7 3.76e- 5 rmse    standard  
-    ##  7               3           1            2 2.64e- 7 rmse    standard  
-    ##  8               5           0            5 1.30e- 9 rmse    standard  
-    ##  9               1           2            1 8.72e- 6 rmse    standard  
-    ## 10               4           2            8 8.67e- 3 rmse    standard  
-    ## # … with 4 more variables: mean <dbl>, n <int>, std_err <dbl>,
-    ## #   .config <chr>
+    ##    non_seasonal_ar seasonal_ar hidden_units  penalty .metric .estimator  mean     n std_err
+    ##              <int>       <int>        <int>    <dbl> <chr>   <chr>      <dbl> <int>   <dbl>
+    ##  1               4           1            9 6.10e- 1 rmse    standard   0.765     6  0.0521
+    ##  2               2           0            6 4.15e-10 rmse    standard   0.772     6  0.0453
+    ##  3               2           0            5 1.44e- 1 rmse    standard   0.774     6  0.0543
+    ##  4               3           2            7 7.34e- 7 rmse    standard   0.775     6  0.0474
+    ##  5               2           1            6 6.35e- 2 rmse    standard   0.779     6  0.0545
+    ##  6               5           1            7 3.76e- 5 rmse    standard   0.780     6  0.0443
+    ##  7               3           1            2 2.64e- 7 rmse    standard   0.788     6  0.0484
+    ##  8               5           0            5 1.30e- 9 rmse    standard   0.790     6  0.0539
+    ##  9               1           2            1 8.72e- 6 rmse    standard   0.790     6  0.0637
+    ## 10               4           2            8 8.67e- 3 rmse    standard   0.790     6  0.0526
+    ## # … with 1 more variable: .config <chr>
 
 **Results Plot 1**
 
@@ -2768,7 +2768,7 @@ big difference.
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-<img src="index_files/figure-markdown_strict/unnamed-chunk-95-1.png" width="70%" />
+<img src="index_files/figure-markdown_strict/index-95-1.png" width="70%" />
 
 **Tuning Grid 2**
 
@@ -2793,20 +2793,19 @@ big difference.
     tune_results_nnetar_f_2 %>% show_best('rmse', n = 10)
 
     ## # A tibble: 10 x 10
-    ##    non_seasonal_ar seasonal_ar hidden_units    penalty .metric .estimator
-    ##              <int>       <int>        <int>      <dbl> <chr>   <chr>     
-    ##  1               1           2            5 0.000460   rmse    standard  
-    ##  2               1           1            5 0.00000292 rmse    standard  
-    ##  3               1           0            5 0.00000541 rmse    standard  
-    ##  4               1           0            5 0.000160   rmse    standard  
-    ##  5               1           2            5 0.0000212  rmse    standard  
-    ##  6               1           0            5 0.0000135  rmse    standard  
-    ##  7               1           1            5 0.0000865  rmse    standard  
-    ##  8               1           1            5 0.00000189 rmse    standard  
-    ##  9               1           2            5 0.000645   rmse    standard  
-    ## 10               1           1            5 0.0000595  rmse    standard  
-    ## # … with 4 more variables: mean <dbl>, n <int>, std_err <dbl>,
-    ## #   .config <chr>
+    ##    non_seasonal_ar seasonal_ar hidden_units    penalty .metric .estimator  mean     n std_err
+    ##              <int>       <int>        <int>      <dbl> <chr>   <chr>      <dbl> <int>   <dbl>
+    ##  1               1           2            5 0.000460   rmse    standard   0.771     6  0.0508
+    ##  2               1           1            5 0.00000292 rmse    standard   0.773     6  0.0467
+    ##  3               1           0            5 0.00000541 rmse    standard   0.778     6  0.0547
+    ##  4               1           0            5 0.000160   rmse    standard   0.780     6  0.0496
+    ##  5               1           2            5 0.0000212  rmse    standard   0.785     6  0.0484
+    ##  6               1           0            5 0.0000135  rmse    standard   0.786     6  0.0549
+    ##  7               1           1            5 0.0000865  rmse    standard   0.789     6  0.0503
+    ##  8               1           1            5 0.00000189 rmse    standard   0.790     6  0.0561
+    ##  9               1           2            5 0.000645   rmse    standard   0.791     6  0.0539
+    ## 10               1           1            5 0.0000595  rmse    standard   0.792     6  0.0573
+    ## # … with 1 more variable: .config <chr>
 
 **Results Plot 2**
 
@@ -2816,7 +2815,7 @@ big difference.
          geom_smooth(se = FALSE, size = 0.5) +
          theme_dark_grey() 
 
-<img src="index_files/figure-markdown_strict/unnamed-chunk-99-1.png" width="50%" />
+<img src="index_files/figure-markdown_strict/index-99-1.png" width="50%" />
 
 **Fit Tuned Workflow on Original Traning Data**
 
@@ -2854,14 +2853,14 @@ testing data.
     calibration_tuned_tbl %>% modeltime_accuracy() %>% arrange(rmse) 
 
     ## # A tibble: 6 x 9
-    ##   .model_id .model_desc          .type   mae  mape  mase smape  rmse   rsq
-    ##       <int> <chr>                <chr> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1         3 SVM-no_fourier-tuned Test  0.371  359. 0.506  57.8 0.543 0.483
-    ## 2         6 NNETAR-fourier-tuned Test  0.403  363. 0.549  63.4 0.559 0.447
-    ## 3         2 SVM-fourier-tuned    Test  0.395  381. 0.538  63.3 0.571 0.427
-    ## 4         5 NNETAR-no_fourier-t… Test  0.430  250. 0.586  68.9 0.581 0.427
-    ## 5         4 Random Forest-tuned  Test  0.419  304. 0.571  64.5 0.586 0.403
-    ## 6         1 PROPHET_XGBOOST-tun… Test  0.419  378. 0.572  62.0 0.601 0.369
+    ##   .model_id .model_desc             .type   mae  mape  mase smape  rmse   rsq
+    ##       <int> <chr>                   <chr> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+    ## 1         3 SVM-no_fourier-tuned    Test  0.371  359. 0.506  57.8 0.543 0.483
+    ## 2         6 NNETAR-fourier-tuned    Test  0.403  363. 0.549  63.4 0.559 0.447
+    ## 3         2 SVM-fourier-tuned       Test  0.395  381. 0.538  63.3 0.571 0.427
+    ## 4         5 NNETAR-no_fourier-tuned Test  0.430  250. 0.586  68.9 0.581 0.427
+    ## 5         4 Random Forest-tuned     Test  0.419  304. 0.571  64.5 0.586 0.403
+    ## 6         1 PROPHET_XGBOOST-tuned   Test  0.433  368. 0.590  64.0 0.606 0.366
 
 **Visualize Fit on Test Data**
 
@@ -2878,7 +2877,7 @@ testing data.
        theme_dark_grey() +
        scale_color_todd_dark_bright()
 
-![](index_files/figure-markdown_strict/Tuned%20Models%20fit%20on%20testing(splits)-1.png)
+![](index_files/figure-markdown_strict/Tuned-Models-fit-testing-splits-1.png)
 
 The hyperparameter tuning helped the performance of some models, at
 least regarding fit on the testing data. I could do some more work
@@ -2919,7 +2918,7 @@ of sales.
        theme_dark_grey() +
        scale_color_todd_dark_bright()
 
-![](index_files/figure-markdown_strict/unnamed-chunk-105-1.png)
+![](index_files/figure-markdown_strict/index-105-1.png)
 
 **Visualizing Sales Forecast with 6 Tuned-Models Zoomed Out**
 
@@ -2944,7 +2943,7 @@ of sales.
        theme_dark_grey() +
        scale_color_todd_dark_bright()
 
-![](index_files/figure-markdown_strict/unnamed-chunk-106-1.png)
+![](index_files/figure-markdown_strict/index-106-1.png)
 
 ## 🏁 Ensemble & Save Work {#ensemble}
 
@@ -2961,14 +2960,14 @@ best to 5 for the worst.
     calibration_tuned_tbl %>% modeltime_accuracy() %>% arrange(rmse) 
 
     ## # A tibble: 6 x 9
-    ##   .model_id .model_desc          .type   mae  mape  mase smape  rmse   rsq
-    ##       <int> <chr>                <chr> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1         3 SVM-no_fourier-tuned Test  0.371  359. 0.506  57.8 0.543 0.483
-    ## 2         6 NNETAR-fourier-tuned Test  0.403  363. 0.549  63.4 0.559 0.447
-    ## 3         2 SVM-fourier-tuned    Test  0.395  381. 0.538  63.3 0.571 0.427
-    ## 4         5 NNETAR-no_fourier-t… Test  0.430  250. 0.586  68.9 0.581 0.427
-    ## 5         4 Random Forest-tuned  Test  0.419  304. 0.571  64.5 0.586 0.403
-    ## 6         1 PROPHET_XGBOOST-tun… Test  0.419  378. 0.572  62.0 0.601 0.369
+    ##   .model_id .model_desc             .type   mae  mape  mase smape  rmse   rsq
+    ##       <int> <chr>                   <chr> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+    ## 1         3 SVM-no_fourier-tuned    Test  0.371  359. 0.506  57.8 0.543 0.483
+    ## 2         6 NNETAR-fourier-tuned    Test  0.403  363. 0.549  63.4 0.559 0.447
+    ## 3         2 SVM-fourier-tuned       Test  0.395  381. 0.538  63.3 0.571 0.427
+    ## 4         5 NNETAR-no_fourier-tuned Test  0.430  250. 0.586  68.9 0.581 0.427
+    ## 5         4 Random Forest-tuned     Test  0.419  304. 0.571  64.5 0.586 0.403
+    ## 6         1 PROPHET_XGBOOST-tuned   Test  0.433  368. 0.590  64.0 0.606 0.366
 
     weight_ensemble_tbl <- calibration_tuned_tbl %>%  
                            ensemble_weighted(loadings = c(5,7,10,6,8,9)) %>% 
@@ -2979,9 +2978,9 @@ best to 5 for the worst.
     weight_ensemble_tbl %>% modeltime_accuracy(testing(splits))
 
     ## # A tibble: 1 x 9
-    ##   .model_id .model_desc          .type   mae  mape  mase smape  rmse   rsq
-    ##       <int> <chr>                <chr> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
-    ## 1         1 ENSEMBLE (WEIGHTED)… Test  0.380  334. 0.518  59.8 0.547 0.473
+    ##   .model_id .model_desc                   .type   mae  mape  mase smape  rmse   rsq
+    ##       <int> <chr>                         <chr> <dbl> <dbl> <dbl> <dbl> <dbl> <dbl>
+    ## 1         1 ENSEMBLE (WEIGHTED): 6 MODELS Test  0.381  333. 0.519  60.0 0.547 0.473
 
 **Refit Ensemble on All Data**
 
@@ -3008,7 +3007,7 @@ best to 5 for the worst.
        theme_dark_grey() +
        scale_color_todd_dark_bright()
 
-![](index_files/figure-markdown_strict/Ensemble%20Forecast-1.png)
+![](index_files/figure-markdown_strict/Ensemble-Forecast-1.png)
 
 If you need the actual forecast values, be sure to un-transform and save
 any individual model or ensemble data. These files have a lot of
@@ -3033,16 +3032,16 @@ information, so they can get quite large.
     ## # A tibble: 84 x 5
     ##    .model_id .model_desc                   .key       .index      .value
     ##        <int> <chr>                         <fct>      <date>       <dbl>
-    ##  1         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2018-12-31 1623.  
-    ##  2         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-01   56.8 
-    ##  3         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-02  167.  
-    ##  4         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-03    1.25
-    ##  5         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-04  598.  
-    ##  6         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-05  716.  
-    ##  7         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-06  877.  
-    ##  8         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-07  894.  
-    ##  9         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-08  867.  
-    ## 10         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-09  129.  
+    ##  1         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2018-12-31 1811.  
+    ##  2         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-01   77.9 
+    ##  3         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-02  219.  
+    ##  4         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-03    1.04
+    ##  5         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-04  572.  
+    ##  6         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-05  769.  
+    ##  7         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-06  855.  
+    ##  8         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-07  888.  
+    ##  9         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-08  823.  
+    ## 10         1 ENSEMBLE (WEIGHTED): 6 MODELS prediction 2019-01-09  168.  
     ## # … with 74 more rows
 
 *The `.value` is our daily sales prediction for the corresponding date
