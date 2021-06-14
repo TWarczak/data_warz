@@ -20,7 +20,7 @@ bio: Doubling down with R for a career in data science. Relocating to Seattle.
 
 # Interests to show in About widget
 interests:
-- R for data science
+- R for Data Science
 - Data Analysis
 - Modeling
 - Time-Series Forecasting
@@ -76,4 +76,4 @@ My name is Todd Warczak, pronounced WAR-ZAK, and I recently completed my PhD in 
 
 I currently live in White River Junction, VT. Looking to relocate to Seattle, WA to be closer to friends and family. You can find me on Twitter and GitHub. This blog was built in RStudio using {blogdown} and Hugo-academic; deployed on Netlify. 
 
-{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/demo_resume.pdf" "newtab" >}}resumé{{< /staticref >}}.
+#{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/demo_resume.pdf" "newtab" >}}resumé{{< /staticref >}}.
