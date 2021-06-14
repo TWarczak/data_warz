@@ -70,10 +70,13 @@ email: "twarczak@gmail.com"
 
 # Highlight the author in author lists? (true/false)
 highlight_name: false
+
+# add this outside of yaml if you want to bring link back
+# {{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/demo_resume.pdf" "newtab" >}}resumé{{< /staticref >}}.
+
 ---
 
 My name is Todd Warczak, pronounced WAR-ZAK, and I recently completed my PhD in 2020 genetically engineering safer-to-eat crops that accumulate less arsenic from the soil. The most fullfilling streches of my thesis work involved implementing new statistical tools in R to analyze and visualize my plant genomics data. Now I am eager to move into data science full-time where I can grow my abilities within the amazing R community. 
 
 I currently live in White River Junction, VT. Looking to relocate to Seattle, WA to be closer to friends and family. You can find me on Twitter and GitHub. This blog was built in RStudio using {blogdown} and Hugo-academic; deployed on Netlify. 
 
-#{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/demo_resume.pdf" "newtab" >}}resumé{{< /staticref >}}.
