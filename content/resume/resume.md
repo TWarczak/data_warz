@@ -68,7 +68,7 @@ twarczak@gmail.com\
 ## Work Experience {.divider}
 
 ### Molecular Biologist
-#### 2015 - 2020
+#### 2012 - 2020
 * Engineered genome-wide association study (GWAS) to identify genes controlling arsenic tolerance in plants. Determined variation in the expression of Arabidopsis gene *NIP1;1* on 4th chromosome as the major genetic factor for tolerating arsenic. All data analyzed in R.
 * Developed the first cell-type specific expression map in R for plant genes involved in arsenic acquisition, efflux, sequestration, etc. for root epidermal, cortical, and endodermal cells.
 * Built first RNA-seq pipeline for research lab to analyze gene expression of 25000+ plant genes using R. Transitioned multiple lab data analysis workflows from excel to R, including PCA, qPCR, Gene Ontology analysis, and statistical tests (t-tests, ANOVA, etc.).
