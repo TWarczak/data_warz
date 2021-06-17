@@ -19,6 +19,9 @@ gallery_item:
 - album: gallery
   image: survivor_low_res.png
   caption: Sunburst plot showing the different personality types of all Survivor contestants vs just the winners. [Github](https://github.com/TWarczak/TidyTuesday/tree/main/plots/2021_23_survivor)
+- album: gallery
+  image: fish2.gif
+  caption: Great Lakes commercial fishing by rolling average of fish family yearly catch. [Github](https://github.com/TWarczak/TidyTuesday/tree/main/plots/2021_24_fish)
 ---
 
 {{< gallery >}}
