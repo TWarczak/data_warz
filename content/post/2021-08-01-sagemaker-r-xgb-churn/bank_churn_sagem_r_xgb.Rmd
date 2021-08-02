@@ -1,0 +1,587 @@
+---
+title: "Predicting Bank Customer Churn using AWS SageMaker and XGBoost in Local RStudio"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+
+theme_dark_grey <- function(base_size=14, base_family="sans") {
+   library(grid)
+   library(ggthemes)
+   (theme_foundation(base_size=base_size, base_family=base_family)
+      + theme(plot.title = element_text(face = "bold", colour = '#ffffb3',
+                                        size = rel(1.1), hjust = 0.0, 
+                                        margin = margin(0,0,5,0)),
+              text = element_text(),
+              panel.background = element_rect(colour = NA, fill = 'grey20'),
+              plot.background = element_rect(colour = NA, fill = '#262626'),
+              panel.border = element_rect(colour = NA),
+              axis.title = element_text(face = "bold",size = rel(1), colour = 'white'),
+              axis.title.y = element_text(angle=90,vjust =2),
+              axis.title.x = element_text(vjust = -0.2),
+              axis.text = element_text(colour = 'grey70'), 
+              axis.line.x = element_line(colour="grey70"),
+              axis.line.y = element_line(colour="grey70"),
+              axis.ticks = element_line(colour="grey70"),
+              panel.grid.major = element_line(colour="#262626"),
+              panel.grid.minor = element_blank(),
+              legend.background = element_rect(fill ='#262626'),
+              legend.text = element_text(color = 'white'),
+              legend.key = element_rect(colour = NA, fill = '#262626'),
+              legend.position = "bottom",
+              legend.direction = "horizontal",
+              legend.box = "vetical",
+              legend.key.size= unit(0.5, "cm"),
+              #legend.margin = unit(0, "cm"),
+              legend.title = element_text(face="italic", colour = 'white'),
+              plot.margin=unit(c(5,5,5,5),"mm"),
+              strip.background=element_rect(colour="#2D3A4C",fill="#2D3A4C"),
+              strip.text = element_text(face="bold", colour = 'white')
+      ))
+}
+
+scale_fill_todd_dark <- function(...){
+   library(scales)
+   discrete_scale("fill","todd",manual_pal(values = c("#decbe4","#fed9a6","#b3cde3","#ccebc5","#fbb4ae",
+                                                      "#ffffcc","#e5d8bd","#fddaec","#f2f2f2")), ...)
+}
+```
+
+```{r echo=TRUE}
+library(tidymodels)
+library(tidyverse)
+library(scales)
+library(lubridate)
+library(stacks)
+library(corrmorant)
+library(patchwork)
+library(reticulate)    # for calling the SageMaker Python SDK from R
+library(pROC)          
+```
+
+-   [🥅 Project Goal](#goal)
+-   [🗂 Obtain Data](#data)
+-   [🛁 Clean Data](#clean)
+-   [🔭 Explore Data](#explore)
+-   [🧮 Prep XGBoost](#prep)
+-   [🏗 Build Workflows](#build)
+-   [🔧 Tune Models](#tune)
+-   [🏆 Forecast w/ Best Models](#forecast)
+-   [🏁 Ensemble & Save Work](#ensemble)
+-   [🤔 Decisions](#decisions)
+
+## 🥅 Goal of this Project {#goal}
+
+Predict whether a bank customer will churn using AWS SageMaker and RStudio
+
+## 🗂 Obtain Data {#data}
+
+The data comes from the Kaggle competition
+[SLICED](https://www.kaggle.com/c/sliced-s01e07-HmPsw2/overview), a live data science
+competition on Twitch where competitors get a never-before-seen dataset and two-hours
+to code a solution to a prediction challenge.
+
+```{r message=FALSE, warning=FALSE}
+churn_data <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-sagemaker-r-xgb-churn/train.csv")
+
+
+holdout <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-sagemaker-r-xgb-churn/test.csv")
+
+```
+
+## 🛁 Clean Data {#clean}
+
+```{r }
+glimpse(churn_data)
+```
+
+### [Data Dictionary]{.ul}
+
+#### Outcome Variable
+
+-   attrition_flag: whether the customer is churned (0 = no; 1 = yes)
+
+#### ID
+
+-   id: unique identifier for the customer
+
+#### Categorical Features
+
+-   gender
+-   education_level
+-   income_category: income range of the customer
+
+#### Numeric Features
+
+-   customer_age
+
+-   total_relationship_count: number of relationships
+
+-   months_inactive_12_mon: number of months the customer is inactive in past 12
+    months
+
+-   credit_limit
+
+-   total_revolving_bal: customer's total revolving balance
+
+-   total_amt_chng_q4_q1: amount the balance changed from Q4 to Q1
+
+-   total_trans_amt: value of all the customer's transactions in the period
+
+-   total_trans_ct: count of all the customer's transactions
+
+-   total_ct_chng_q4_q1: difference in number of the customer's transactions from Q4
+    to Q1
+
+-   avg_utilization_ratio: customer's average utilization ratio during the period
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+DataExplorer::create_report(churn_data)
+```
+
+```{r}
+skimr::skim_without_charts(churn_data)
+```
+
+```{r message=FALSE, warning=FALSE}
+churn_data2 <- churn_data %>% 
+  mutate(churned = factor(ifelse(attrition_flag == 1, "yes", "no"),
+                          levels = c("no", "yes"))) %>%
+  mutate(education_level = fct_relevel(education_level, c("Unknown", 
+                                                          "Uneducated", 
+                                                          "High School", 
+                                                          "College", 
+                                                          "Graduate", 
+                                                          "Doctorate", 
+                                                          "Post-Graduate"))) %>%
+  mutate(income_category = fct_relevel(income_category, c("Unknown",
+                                                          "Less than $40K",
+                                                          "$40K - $60K",
+                                                          "$60K - $80K",
+                                                          "$80K - $120K",
+                                                          "$120K +")))
+
+churn_data3 <- churn_data2 %>% 
+               mutate(across(.cols = c(credit_limit, total_trans_amt),
+                             .fns  = log1p)) %>%
+               mutate(across(.cols = c(credit_limit, total_trans_amt), 
+                             .fns = timetk::standardize_vec)) %>% 
+               select(-c(id, attrition_flag))
+```
+
+```{r message=FALSE, warning=FALSE}
+
+corfun <- function(x, y)  {
+  round(cor(x, y, method = "pearson", use = "pairwise.complete.obs"), 2)
+}
+
+ggcorrm(churn_data3, aes(col = churned, fill = churned), bg_dia  = "grey30") +
+    lotri(geom_point(alpha = 0.1)) +
+    lotri(geom_smooth(se=F, method = "loess")) +
+    utri_funtext(fun = corfun, size = 6) +
+    dia_names(y_pos = 0.15, size = 3) +
+    dia_density(lower = 0.3, fill = "grey60", color = 1) +
+    theme_dark() +
+    scale_color_viridis_d() +
+    scale_fill_viridis_d() +
+    labs(title = "Correlation Plot")
+```
+
+```{r}
+dense <- churn_data3 %>%
+         select(-c(gender, education_level, income_category)) %>%
+         pivot_longer(cols = c(customer_age:avg_utilization_ratio), 
+                      names_to = "feature", 
+                      values_to = "value")
+
+ggplot(dense, aes(value, fill = churned)) +
+  geom_density(alpha = .5) +
+  facet_wrap(~ feature, scales = "free") +
+  labs(title = "Numeric features impacting churn?")
+```
+
+```{r}
+churn_data %>% 
+  ggplot(aes(total_trans_amt, total_trans_ct, z = attrition_flag)) +
+  stat_summary_hex(alpha = 0.8, bins = 50) +
+  scale_fill_viridis_c() +
+  labs(fill = "% Churned") +
+  theme_dark()
+
+churn_data %>% 
+  ggplot(aes(total_ct_chng_q4_q1, total_trans_ct, z = attrition_flag)) +
+  stat_summary_hex(alpha = 0.8, bins = 50) +
+  scale_fill_viridis_c() +
+  labs(fill = "% Churned") +
+  theme_dark()
+
+churn_data %>% 
+  ggplot(aes(credit_limit, avg_utilization_ratio, z = attrition_flag)) +
+  stat_summary_hex(alpha = 0.8, bins = 50) +
+  scale_fill_viridis_c() +
+  labs(fill = "% Churned") +
+  theme_dark()
+
+churn_data %>% 
+  ggplot(aes(total_trans_amt, total_amt_chng_q4_q1, z = attrition_flag)) +
+  stat_summary_hex(alpha = 0.8, bins = 60) +
+  scale_fill_viridis_c() +
+  labs(fill = "% Churned") +
+  theme_dark()
+```
+
+```{r echo=FALSE}
+cat_feat <- churn_data2 %>% 
+  select(c(gender, education_level, income_category, churned))
+
+n_gen <- cat_feat %>% 
+  group_by(gender) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(gender, count)) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = count),
+            color    = "white",
+            size     = 3,
+            fontface = 'bold',
+            hjust    = 1.2,
+            vjust    = 0.4) +
+        theme_minimal() +
+        theme(legend.position = 'none',
+              axis.title.x = element_blank())
+
+n_edu <- cat_feat %>% 
+  group_by(education_level) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(education_level, count)) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = count),
+            color    = "white",
+            size     = 3,
+            fontface = 'bold',
+            hjust    = 1.2,
+            vjust    = 0.4) +
+        theme_minimal() +
+        theme(legend.position = 'none')
+
+n_inc <- cat_feat %>% 
+  group_by(income_category) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(income_category, count)) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = count),
+            color    = "white",
+            size     = 3,
+            fontface = 'bold',
+            hjust    = 1.2,
+            vjust    = 0.4) +
+        theme_minimal() +
+        theme(legend.position = 'none')
+
+n_chrn <- cat_feat %>% 
+  group_by(churned) %>% 
+  summarise(count = n()) %>% 
+  ggplot(aes(churned, count)) +
+  geom_col() +
+  coord_flip() +
+  geom_text(aes(label = count),
+            color    = "white",
+            size     = 3,
+            fontface = 'bold',
+            hjust    = 1.2,
+            vjust    = 0.4) +
+        theme_minimal() +
+        theme(legend.position = 'none',
+              axis.title.x = element_blank())
+
+n_chrn + n_gen + n_edu + n_inc +
+plot_layout(ncol = 2, heights = c(0.7,2)) +
+plot_annotation(title = "Counts of Each Categorical Variable in Training Data")
+```
+
+```{r echo=FALSE}
+gen <- ggplot(cat_feat %>% 
+                group_by(gender, churned) %>% 
+                summarise(n = n()) %>% 
+                mutate(percent_churned = prop.table(n)*100) %>% 
+                filter(churned == 'yes'),
+               aes(gender, percent_churned)) +
+        geom_col() +
+        coord_flip() +
+        geom_text(aes(label = round(percent_churned, digits = 1)),
+                  color    = "white",
+                  size     = 4,
+                  fontface = 'bold',
+                  hjust    = 1.3,
+                  vjust    = 0.4) +
+        theme_minimal() +
+        theme(legend.position = 'none')
+
+ed <- ggplot(cat_feat %>% 
+                group_by(education_level, churned) %>% 
+                summarise(n = n()) %>% 
+                mutate(percent_churned = prop.table(n)*100) %>% 
+                filter(churned == 'yes'),
+             aes(education_level, percent_churned)) +
+        geom_col() +
+        coord_flip() +
+        geom_text(aes(label = round(percent_churned, digits = 1)),
+                    color    = "white",
+                    size     = 4,
+                    fontface = 'bold',
+                    hjust    = 1.3,
+                    vjust    = 0.4) +
+        theme_minimal() +
+        theme(axis.title.x = element_blank(),
+              legend.position = 'none')
+
+inc <- ggplot(cat_feat %>% 
+                group_by(income_category, churned) %>% 
+                summarise(n = n()) %>% 
+                mutate(percent_churned = prop.table(n)*100) %>% 
+                filter(churned == 'yes'),
+              aes(income_category, percent_churned)) +
+        geom_col() +
+        coord_flip() +
+        geom_text(aes(label = round(percent_churned, digits = 1)),
+                    color    = "white",
+                    size     = 4,
+                    fontface = 'bold',
+                    hjust    = 1.3,
+                    vjust    = 0.4) +
+        theme_minimal() +
+        theme(axis.title.x = element_blank(),
+              legend.position = 'none')
+
+ed + inc + gen +
+    plot_layout(ncol = 2, heights = c(2,0.7)) +
+    plot_annotation(title = "Percentage of Each Categorical Variable that Churned")
+
+```
+
+```{r echo=FALSE}
+cat_feat %>%
+  pivot_longer(gender:income_category) %>%
+  ggplot(aes(y = value, fill = churned)) +
+  geom_bar(position = "fill") +
+  facet_wrap(vars(name), scales = "free", ncol = 1) +
+  theme_minimal() +
+  labs(x = NULL, y = NULL)
+```
+
+final_fit %\>% vip(geom = "col", aesthetics = list(fill = "midnightblue", alpha =
+0.8)) + scale_y\_continuous(expand = c(0, 0))
+
+or
+
+workflow() %\>% add_recipe(ranger_recipe) %\>% add_model(imp_spec) %\>%
+fit(ikea_train) %\>% pull_workflow_fit() %\>% vip(aesthetics = list(alpha = 0.8, fill
+= "midnightblue"))
+
+```{r}
+use_condaenv("sagemaker-r", required = TRUE)
+sagemaker <- import("sagemaker")
+session <- sagemaker$Session()
+```
+
+```{r}
+# bucket <- session$default_bucket()
+bucket <- "twarczak-sagemaker2"
+project <- "bank-churn"
+data_path <- paste0("s3://", bucket, "/", project, "/", "data")
+models_path <- paste0("s3://", bucket, "/", project, "/", "models")
+```
+
+```{r}
+set.seed(333)
+splits  <- initial_split(churn_data2, prop = 0.85, strata = churned)
+churn_training <- training(splits)
+churn_validation  <- testing(splits)
+churn_test <- holdout
+```
+
+```{r}
+churn_rec <- recipe(attrition_flag ~ ., data = churn_training) %>% 
+             step_rm(churned) %>% 
+             update_role(id, new_role = "id variable") %>%
+             step_dummy(all_nominal(), -all_outcomes(), one_hot = TRUE)
+
+churn_preprocessed <- prep(churn_rec, training = churn_training) %>% 
+                      juice() %>% 
+                      select(attrition_flag, everything()) # just to put attrition_flag as 1st column
+
+dim(churn_preprocessed)
+```
+```{r}
+
+```
+
+
+```{r}
+s3_uploader <- sagemaker$s3$S3Uploader()
+
+s3_train <- s3_uploader$upload(local_path = "../bank-churn/data/churn_training.csv", 
+                               desired_s3_uri = data_path)
+
+s3_validation <- s3_uploader$upload(local_path = "../bank-churn/data/hotels_validation.csv",
+                                    desired_s3_uri = data_path)
+
+s3_test <- s3_uploader$upload(local_path = "../xgboost-hotels/data/hotels_test.csv", 
+                              desired_s3_uri = data_path)
+```
+
+```{r}
+region <- session$boto_region_name
+# get container image location
+container <- sagemaker$image_uris$retrieve(framework = "xgboost", 
+                                           region    = region, 
+                                           version   = "1.3-1" )
+# get SageMaker execution role stored in .Renviron
+role_arn <- Sys.getenv("SAGEMAKER_ROLE_ARN")
+#role_name <- "AmazonSageMaker-ExecutionRole-20210727T164660"
+# Create an Estimator object
+xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
+                                               role               = role_arn,
+                                               instance_count     = 1L,
+                                               instance_type      = "ml.m5.4xlarge",
+                                               volume_size        = 30L,
+                                               max_run            = 3600L,
+                                               output_path        = models_path,
+                                               sagemaker_session  = session,
+                                               use_spot_instances = TRUE,
+                                               max_wait           = 600L )
+```
+
+```{r}
+xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
+                                  eval_metric      = "auc",
+                                  max_depth        = 5L, 
+                                  eta              = 0.1,
+                                  num_round        = 100L,
+                                  colsample_bytree = 0.4,
+                                  alpha            = 10L,
+                                  min_child_weight = 1.1,
+                                  subsample        = 0.7)
+```
+
+```{r}
+# Create training job name based project organization principles
+algo <- "xgboost"
+timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
+job_name <- paste(project, algo, timestamp, sep = "-")
+s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
+                                                 content_type = 'csv')
+s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
+                                                 content_type = 'csv')
+input_data <- list('train'      = s3_train_input,
+                   'validation' = s3_valid_input)
+```
+
+```{r}
+xgb_estimator$fit(inputs = input_data,
+                  job_name = job_name,
+                  wait = FALSE)  # If set to TRUE, the call will wait until job completes
+```
+
+```{r}
+session$describe_training_job(job_name)[["TrainingJobStatus"]]
+```
+
+```{r}
+training_job_stats <- session$describe_training_job(job_name = job_name)
+final_metrics <-  map_df(training_job_stats$FinalMetricDataList, 
+                          ~tibble(metric_name = .x[["MetricName"]],
+                                  value = .x[["Value"]]))
+final_metrics
+```
+
+```{r}
+predictions_path <- paste0(models_path, "/", job_name, "/predictions")
+xgb_batch_predictor <- xgb_estimator$transformer(instance_count = 1L, 
+                                                 instance_type  = "ml.m5.xlarge", 
+                                                 strategy       = "MultiRecord",
+                                                 assemble_with  = "Line",
+                                                 output_path    = predictions_path)
+```
+
+```{r}
+xgb_batch_predictor$transform(data         = s3_test, 
+                              content_type = 'text/csv',
+                              split_type   = "Line",
+                              job_name     = job_name,
+                              wait         = FALSE) # If TRUE, call waits until job completes
+```
+
+```{r}
+session$describe_transform_job(job_name)[["TransformJobStatus"]]
+```
+
+```{r}
+s3_downloader <- sagemaker$s3$S3Downloader()
+s3_test_predictions_path <- s3_downloader$list(predictions_path)
+ 
+dir.create("./predictions")
+s3_downloader$download( s3_test_predictions_path, "./predictions")
+ 
+test_predictions <- read_csv("./predictions/hotels_test.csv.out",
+                              col_names = FALSE) %>% 
+                    pull(X1)
+
+test_results <- tibble(truth       = hotels_test$children,
+                       predictions = test_predictions )
+
+head(test_results)
+```
+
+```{r}
+roc_obj <- roc(test_results$truth,
+               test_results$predictions,
+               plot        = TRUE,         
+               grid        = TRUE,
+               print.auc   = TRUE,
+               legacy.axes = TRUE, 
+               main        = "ROC curve for XGBoost classification",
+               show.thres  = TRUE,
+               col         = "red2" )
+```
+
+```{r}
+conf_matrix <- confusionMatrix(factor(ifelse(test_results$predictions >= 0.5, 1, 0),
+                                      levels = c("0", "1"), 
+                                      labels = c("no children", "children")),
+                               factor(test_results$truth, 
+                                      levels = c(0, 1), 
+                                      labels = c("no children", "children")),
+                               positive = "children")
+
+conf_matrix
+```
+
+```{r}
+test_results_pred <- test_results %>% 
+                     mutate(pred = factor(ifelse(predictions >= 0.5, 1, 0), 
+                                          levels = c("0", "1")))
+
+gmodels::CrossTable(x          = test_results_pred$pred, 
+                    y          = test_results_pred$truth,
+                    prop.chisq = FALSE, 
+                    prop.r     = FALSE, 
+                    prop.c     = FALSE, 
+                    prop.t     = FALSE,
+                    dnn        = c('predicted children', 'actual children'))
+```
+
+```{r}
+```
+
+```{r}
+```
+
+```{r}
+```
