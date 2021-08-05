@@ -34,8 +34,6 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 ```{r library, echo=TRUE}
 library(tidymodels)
 library(tidyverse)
-#library(scales)
-#library(stacks)        # 
 library(corrmorant)    # correlation matrix
 library(patchwork)     # multiple plots to 1 plot
 library(reticulate)    # calling the SageMaker Python SDK from R
@@ -119,7 +117,7 @@ glimpse(churn_data)
 -   avg_utilization_ratio: customer's average utilization ratio during the period
 
 
-```{r chunk5}
+```{r chunk5, cache=TRUE}
 skimr::skim_without_charts(churn_data)
 ```
 
@@ -155,7 +153,7 @@ churn_data3 <- churn_data2 %>%
 
 Let's look at a correlation matrix of all the numeric variables. We can group by our new `churned` variable to see features that correlate differently based on the churn outcome.  
 
-```{r chunk7, message=FALSE, warning=FALSE}
+```{r chunk7, message=FALSE, warning=FALSE, cache=TRUE}
 
 corfun <- function(x, y)  {
   round(cor(x, y, method = "pearson", use = "pairwise.complete.obs"), 2)
@@ -176,7 +174,7 @@ ggcorrm(churn_data3, aes(col = churned, fill = churned), bg_dia  = "grey30") +
 
 
 
-```{r chunk8}
+```{r chunk8, cache=TRUE}
 dense <- churn_data3 %>%
          select(-c(gender, education_level, income_category)) %>%
          pivot_longer(cols = c(customer_age:avg_utilization_ratio), 
@@ -192,7 +190,7 @@ ggplot(dense, aes(value, fill = churned)) +
 
 
 
-```{r chunk9}
+```{r chunk9, cache=TRUE}
 churn_data %>% 
   ggplot(aes(total_trans_amt, total_trans_ct, z = attrition_flag)) +
   stat_summary_hex(alpha = 0.8, bins = 50) +
@@ -212,7 +210,7 @@ churn_data %>%
   stat_summary_hex(alpha = 0.8, bins = 50) +
   scale_fill_viridis_c() +
   labs(fill = "% Churned") +
-  theme_dark()
+  theme_dark() 
 
 churn_data %>% 
   ggplot(aes(total_trans_amt, total_amt_chng_q4_q1, z = attrition_flag)) +
@@ -222,7 +220,7 @@ churn_data %>%
   theme_dark()
 ```
 
-```{r chunk10, echo=FALSE}
+```{r chunk10, echo=FALSE, cache=TRUE}
 cat_feat <- churn_data2 %>% 
   select(c(gender, education_level, income_category, churned))
 
@@ -293,7 +291,7 @@ plot_layout(ncol = 2, heights = c(0.7,2)) +
 plot_annotation(title = "Counts of Each Categorical Variable in Training Data")
 ```
 
-```{r chunk11, echo=FALSE}
+```{r chunk11, echo=FALSE, cache=TRUE}
 gen <- ggplot(cat_feat %>% 
                 group_by(gender, churned) %>% 
                 summarise(n = n()) %>% 
@@ -353,7 +351,7 @@ ed + inc + gen +
 
 ```
 
-```{r chunk12, echo=FALSE}
+```{r chunk12, echo=FALSE, cache=TRUE}
 cat_feat %>%
   pivot_longer(gender:income_category) %>%
   ggplot(aes(y = value, fill = churned)) +
@@ -379,7 +377,7 @@ models_path <- paste0("s3://", bucket, "/", project, "/", "models")
 
 We will be using Bayesian Optimation for hyperparameter tuning without cross-validation. 
 
-```{r chunk15}
+```{r chunk15, cache=TRUE}
 # Make 70/15/15 Train/Validate/Test split
 
 set.seed(333)
@@ -398,7 +396,7 @@ print(splits)
 print(splits2)
 ```
 
-```{r chunk16}
+```{r chunk16, cache=TRUE}
 churn_rec <- recipe(attrition_flag ~ ., data = train) %>% 
              step_dummy(all_nominal_predictors(), one_hot = TRUE) %>% 
              step_rm(id) %>% 
@@ -416,14 +414,15 @@ churn_test <- bake(churn_rec, new_data = test) %>%
 
 churn_holdout <- bake(churn_rec, new_data = holdout)
 ```
-```{r chunk17}
+```{r chunk17, message=FALSE, warning=FALSE, cache=TRUE}
 bst <- xgboost::xgboost(data = data.matrix(subset(churn_training, select = -attrition_flag)), 
                label = churn_training$attrition_flag, max_depth = 2, eta = 0.5, nthread = 2, nrounds = 100, 
-               objective = "binary:logistic")
+               objective = "binary:logistic", verbose = FALSE)
 
 imp_bst <- xgb.importance(colnames(churn_training), model = bst)
 xgb.ggplot.importance(imp_bst)
-
+```
+```{r chunk17.5, cache=TRUE}
 vip::vip(bst, geom = 'point', num_features = 15)
 ```
 
@@ -457,7 +456,7 @@ write_csv(id_holdout,
 ```
 
 
-```{r chunk19}
+```{r chunk19, cache=TRUE}
 s3_uploader <- sagemaker$s3$S3Uploader()
 
 s3_train <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/data/churn_training.csv", 
@@ -472,7 +471,7 @@ s3_test <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/
 
 ```
 
-```{r chunk20}
+```{r chunk20, cache=TRUE}
 region <- session$boto_region_name
 # get container image location
 container <- sagemaker$image_uris$retrieve(framework = "xgboost", 
@@ -493,7 +492,7 @@ xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
                                                max_wait           = 300L )
 ```
 
-```{r chunk21}
+```{r chunk21, cache=TRUE}
 xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
                                   eval_metric      = "auc",
                                   max_depth        = 5L, 
@@ -505,7 +504,7 @@ xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
                                   subsample        = 0.7)
 ```
 
-```{r chunk22}
+```{r chunk22, cache=TRUE}
 # Create training job name based project organization principles
 algo <- "xgb"
 timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
@@ -518,17 +517,17 @@ input_data <- list('train'      = s3_train_input,
                    'validation' = s3_valid_input)
 ```
 
-```{r chunk23}
+```{r chunk23, cache=TRUE}
 xgb_estimator$fit(inputs = input_data,
                   job_name = job_name,
                   wait = FALSE)  # If set to TRUE, the call will wait until job completes
 ```
 
-```{r chunk24}
+```{r chunk24, cache=TRUE}
 session$describe_training_job(job_name)[["TrainingJobStatus"]]
 ```
 
-```{r chunk25}
+```{r chunk25, cache=TRUE}
 training_job_stats <- session$describe_training_job(job_name = job_name)
 final_metrics <-  map_df(training_job_stats$FinalMetricDataList, 
                           ~tibble(metric_name = .x[["MetricName"]],
@@ -536,7 +535,7 @@ final_metrics <-  map_df(training_job_stats$FinalMetricDataList,
 final_metrics
 ```
 
-```{r chunk26}
+```{r chunk26, cache=TRUE}
 predictions_path <- paste0(models_path, "/", job_name, "/predictions") 
 xgb_batch_predictor <- xgb_estimator$transformer(instance_count = 1L, 
                                                  instance_type  = "ml.m5.xlarge", 
@@ -545,7 +544,7 @@ xgb_batch_predictor <- xgb_estimator$transformer(instance_count = 1L,
                                                  output_path    = predictions_path)
 ```
 
-```{r chunk27}
+```{r chunk27, cache=TRUE}
 xgb_batch_predictor$transform(data         = s3_test, 
                               content_type = 'text/csv',
                               split_type   = "Line",
@@ -553,11 +552,11 @@ xgb_batch_predictor$transform(data         = s3_test,
                               wait         = FALSE) # If TRUE, call waits until job completes
 ```
 
-```{r chunk28}
+```{r chunk28, cache=TRUE}
 session$describe_transform_job(job_name)[["TransformJobStatus"]]
 ```
 
-```{r chunk29}
+```{r chunk29, cache=TRUE}
 s3_downloader <- sagemaker$s3$S3Downloader()
 s3_test_predictions_path <- s3_downloader$list(predictions_path)
  
@@ -574,7 +573,7 @@ test_results <- tibble(truth       = churn_test$attrition_flag,
 head(test_results)
 ```
 
-```{r chunk30}
+```{r chunk30, cache=TRUE}
 roc_obj <- roc(test_results$truth,
                test_results$predictions,
                plot        = TRUE,         
@@ -586,7 +585,7 @@ roc_obj <- roc(test_results$truth,
                col         = "red2" )
 ```
 
-```{r chunk31}
+```{r chunk31, cache=TRUE}
 conf_matrix <- caret::confusionMatrix(factor(ifelse(test_results$predictions >= 0.5, 1, 0),
                                              levels = c("0", "1"), 
                                              labels = c("retained", "churned")),
@@ -642,12 +641,12 @@ tuner$fit(inputs   = input_data,
 ```
 
 
-```{r chunk37}
+```{r chunk37, cache=TRUE}
 session$describe_tuning_job(job_name)[["HyperParameterTuningJobStatus"]]
 ```
 
 
-```{r chunk38}
+```{r chunk38, cache=TRUE}
 tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics(job_name)
 tuning_results_df <- tuning_job_results$dataframe()
 head(tuning_results_df)#[, c(1:4, 6)]
@@ -655,7 +654,7 @@ head(tuning_results_df)#[, c(1:4, 6)]
 ```
 
 
-```{r chunk39, fig.align='center'}
+```{r chunk39, fig.align='center', cache=TRUE}
 ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
   geom_point() +
   xlab("Time") +
@@ -666,7 +665,7 @@ ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
 ```
 
 
-```{r chunk40, fig.align='center'}
+```{r chunk40, fig.align='center', cache=TRUE}
 ggplot(tuning_results_df, aes(num_round, eta)) +
   geom_point(aes(color = FinalObjectiveValue)) +
   scale_color_viridis("AUC", option = "H") +
@@ -676,7 +675,7 @@ ggplot(tuning_results_df, aes(num_round, eta)) +
 ```
 
 
-```{r chunk41}
+```{r chunk41, cache=TRUE}
 best_tuned_model <- tuning_results_df %>%
                     filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
                     filter(alpha == 1) %>%   # there were 2 jobs with max value
@@ -690,8 +689,6 @@ final_metrics <-  map_df(training_job_stats$FinalMetricDataList,
                           ~tibble(metric_name = .x[["MetricName"]],
                                   value       = .x[["Value"]]))
 final_metrics
-
-
 ```
 
 
@@ -719,10 +716,10 @@ xgb_batch_predictor$transform(data         = s3_test,
 
 ```
 
-```{r chunk44}
+```{r chunk44, cache=TRUE}
 session$describe_transform_job(best_tuned_model)[["TransformJobStatus"]]
 ```
-```{r chunk45}
+```{r chunk45, cache=TRUE}
 s3_downloader <- sagemaker$s3$S3Downloader()
 
 s3_test_predictions_path <- s3_downloader$list(predictions_path)
@@ -743,7 +740,7 @@ test_results <- tibble(truth       = churn_test$attrition_flag,
 head(test_results)
 ```
 
-```{r chunk46}
+```{r chunk46, cache=TRUE}
 roc_obj <- roc(test_results$truth, 
                test_results$predictions,
                plot        = TRUE,         
@@ -757,7 +754,7 @@ roc_obj <- roc(test_results$truth,
 
 Creating a confusion matrix using the `caret` package we see the following results:
 
-```{r chunk47}
+```{r chunk47, cache=TRUE}
 conf_matrix <- confusionMatrix(factor(ifelse(test_results$predictions >= 0.5, 1, 0),
                                       levels = c("0", "1"), 
                                       labels = c("retained", "churned")),
@@ -769,7 +766,7 @@ conf_matrix <- confusionMatrix(factor(ifelse(test_results$predictions >= 0.5, 1,
 conf_matrix
 ```
 
-```{r chunk48}
+```{r chunk48, cache=TRUE}
 test_results_pred <- test_results %>% 
                      mutate(pred = factor(ifelse(predictions >= 0.5, 1, 0), 
                                           levels = c("0", "1")))
@@ -782,11 +779,13 @@ gmodels::CrossTable(x          = test_results_pred$pred,
                     prop.t     = FALSE,
                     dnn        = c('predicted churn', 'actual churn'))
 ```
-```{r chunk49}
+
+```{r chunk49, cache=TRUE}
 boto_client <- session$boto_session$client("sagemaker")
 churn_model <- boto_client$list_models()[["Models"]] %>% 
   map_chr("ModelName") %>% 
   .[[1]]
+
 churn_model
 ```
 
@@ -807,11 +806,11 @@ session$create_endpoint(endpoint_name = endpoint_name,
                         wait = FALSE)
 ```
 
-```{r chunk52}
+```{r chunk52, cache=TRUE}
 boto_client$describe_endpoint(EndpointName = endpoint_name)[["EndpointStatus"]]
 ```
 
-```{r chunk53}
+```{r chunk53, cache=TRUE}
 # Instantiate CSV-Serializer/CSV-Deserializer objects
 csv_serializer <- sagemaker$serializers$CSVSerializer()
 
@@ -826,7 +825,7 @@ churn_predictor <- sagemaker$predictor$Predictor(endpoint_name     = endpoint_na
 ```
 
 
-```{r chunk54, message=FALSE}
+```{r chunk54, message=FALSE, cache=TRUE}
 test_set <- read_csv("./data/churn_test.csv", 
                      col_names = FALSE, 
                      n_max     = 5) %>% 
@@ -836,7 +835,7 @@ real_time_predictions <- churn_predictor$predict(data = test_set) %>%
                          as.numeric()
 ```
 
-```{r chunk55, message=FALSE}
+```{r chunk55, message=FALSE, cache=TRUE}
 batch_predictions <- read_csv("./predictions/churn_test.csv.out", 
                               col_names = FALSE, n_max = 5) %>% 
                      .[[1]]
@@ -845,7 +844,7 @@ data.frame(real_time_predictions, batch_predictions)
 ```
 
 
-```{r chunk56, message=FALSE}
+```{r chunk56, message=FALSE, cache=TRUE}
 holdout_set <- read_csv("./data/churn_holdout.csv", 
                      col_names = FALSE) %>% 
                as.matrix()
@@ -854,7 +853,7 @@ real_time_predictions <- churn_predictor$predict(data = holdout_set) %>%
                          as.numeric()
 ```
 
-```{r chunk57}
+```{r chunk57, cache=TRUE }
 churn_holdout_id <- read_csv("data/churn_holdout_id.csv", col_names = FALSE)
 submission <- data.frame(churn_holdout_id, real_time_predictions ) %>% 
               rename(id = X1, attrition_flag = real_time_predictions)
