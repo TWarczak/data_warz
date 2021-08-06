@@ -83,7 +83,7 @@ twarczak@gmail.com\
 * Best performing model deployed as SageMaker endpoint for real-time predictions on holdout data (w/ minimal feature engineering and pre-processing). Predictions submitted to SLICED competition received a score of 0.07622 (LogLoss), which would have placed 8th out of 130 entries.
 
 ### Forecasting Daily Sales with Modeltime
-* Forecasted 3 months of daily sales utilizing the {modeltime} package in R to help ‘Superstore’ company selling furniture, technology, and office supplies manage supply-chain and inventory decisions in Q1 (data source: Kaggle). ([Blog](https://toddwarczak.netlify.app/post/modeltime/), [Github](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime)
+* Forecasted 3 months of daily sales utilizing the {modeltime} package in R to help ‘Superstore’ company selling furniture, technology, and office supplies manage supply-chain and inventory decisions in Q1 (data source: Kaggle). ([Blog](https://toddwarczak.netlify.app/post/modeltime/), [Github](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime))
 * Exploratory data analysis and 11 models tested. 6 {tidymodels} workflows tuned for individual forecasts and weighted ensemble (Support Vector Machine/Neural Network-AR/Random Forest/Prophet-XGboost) forecast.
 
 ### TidyTuesday
