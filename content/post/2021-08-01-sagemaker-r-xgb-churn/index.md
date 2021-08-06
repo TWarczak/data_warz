@@ -1446,8 +1446,8 @@ Save and submit to SLICED s01e07 on Kaggle.
     write.csv(submission, "sliced_s01_e07_submission.csv", row.names = FALSE)
 
 The evaluation algorithm for this competition was **LogLoss**, so the
-lowest score wins. My submission scored **0.07847**, which would have
-been 10th place (of 36 competitors). The winning score was **0.06800**.
+lowest score wins. My submission scored **0.07622**, which would have
+been 8th place (of 36 competitors). The winning score was **0.06800**.
 Competitors only had 2 hours to submit, so this is not a fair
 comparison, but it does show how a well-tuned XGBoost model can make
 great predictions without much feature engineering. To improve the
