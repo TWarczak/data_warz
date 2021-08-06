@@ -24,16 +24,6 @@ image:
   preview_only: true
 ---
 
-
-    library(tidymodels)
-    library(tidyverse)
-    library(corrmorant)    # correlation matrix
-    library(patchwork)     # multiple plots to 1 plot
-    library(reticulate)    # calling the SageMaker Python SDK from R
-    library(pROC)          # ROC curves
-    library(viridis)       # color palletes
-    library(caret)         # confusion matrix
-
 -   [🥅 Project Goal](#goal)
 -   [🗂 Obtain Data](#data)
 -   [🛁 Clean Data](#clean)
@@ -45,6 +35,15 @@ image:
 -   [🎯 Predict Holdout](#holdout)
 -   [📬 Submission](#submit)
 
+    library(tidymodels)
+    library(tidyverse)
+    library(corrmorant)    # correlation matrix
+    library(patchwork)     # multiple plots to 1 plot
+    library(reticulate)    # calling the SageMaker Python SDK from R
+    library(pROC)          # ROC curves
+    library(viridis)       # color palletes
+    library(caret)         # confusion matrix
+    
 ## 🥅 Goal of this Project
 
 Predict whether a bank customer will churn using AWS SageMaker and
