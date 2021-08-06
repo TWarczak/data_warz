@@ -3,19 +3,19 @@ title: "Predicting Bank Customer Churn using AWS SageMaker and XGBoost in Local 
 output: md_document
 author: Todd Warczak
 date: '2021-08-03'
-slug: modeltime
+slug: SageMaker
 categories:
-   - rstats
-   - AWS
-   - SageMaker
-   - XGBoost
-   - R
+  - rstats
+  - AWS
+  - SageMaker
+  - XGBoost
+  - R
 tags:
-   - rstats
-   - AWS
-   - reticulate
-   - XGBoost
-   - R
+  - rstats
+  - AWS
+  - reticulate
+  - XGBoost
+  - R
 summary: "For this post, I experimented using AWS SageMaker with the AWS built-in XGBoost algorithm from within my local RStudio to predict whether a bank customer has churned. The data comes from the SLICED season 1 episode 7 Kaggle competition. SLICED is a data science competition where contestants are given a never-before-seen dataset and two-hours to code a solution to a prection challenge."
 featured: "featured-sagemaker.png"
 image:
@@ -23,7 +23,7 @@ image:
   focal_point: ''
   preview_only: true
 ---
-
+  
 -   [🥅 Project Goal](#goal)
 -   [🗂 Obtain Data](#data)
 -   [🛁 Clean Data](#clean)
@@ -34,9 +34,9 @@ image:
 -   [🏆 Select Best Model](#best)
 -   [🎯 Predict Holdout](#holdout)
 -   [📬 Submission](#submit)
-
+                      
 ##      
-    
+                      
     library(tidymodels)
     library(tidyverse)
     library(corrmorant)    # correlation matrix
@@ -45,7 +45,7 @@ image:
     library(pROC)          # ROC curves
     library(viridis)       # color palletes
     library(caret)         # confusion matrix
-    
+                      
 ## 🥅 Goal of this Project
 
 Predict whether a bank customer will churn using AWS SageMaker and
@@ -397,6 +397,7 @@ Data summary
 </tbody>
 </table>
 
+##
 Not much cleaning to do. No missing data. For EDA I want the
 `attrition_flag` variable to be obvious whether the customer has churned
 or not. I’ll factor the categorical variables and experiment with log
@@ -1118,38 +1119,20 @@ Define S3 location of data sets and tuning job name.
     tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics(job_name_y)
     tuning_results_df <- tuning_job_results$dataframe()
 
-    head(tuning_results_df)
+    head(tuning_results_df, n = 3)
 
-    ##   alpha colsample_bytree        eta max_depth num_round
-    ## 1     2        0.6871357 0.13871194        15       241
-    ## 2     2        0.5947285 0.09493995        14       500
-    ## 3     1        0.5546992 0.04806042        15       498
-    ## 4     3        0.5543842 0.40000000         3       395
-    ## 5     1        0.6140406 0.02905778        13       496
-    ## 6     2        0.6146308 0.10305220        15       344
-    ##                              TrainingJobName TrainingJobStatus
-    ## 1 churn-xgb-2021-08-06-03-56-45-100-03dd1b49         Completed
-    ## 2 churn-xgb-2021-08-06-03-56-45-099-29087499         Completed
-    ## 3 churn-xgb-2021-08-06-03-56-45-098-f9263ea8         Completed
-    ## 4 churn-xgb-2021-08-06-03-56-45-097-a4699279         Completed
-    ## 5 churn-xgb-2021-08-06-03-56-45-096-e2705306         Completed
-    ## 6 churn-xgb-2021-08-06-03-56-45-095-50620e38         Completed
-    ##   FinalObjectiveValue   TrainingStartTime     TrainingEndTime
-    ## 1             0.99394 2021-08-06 05:52:41 2021-08-06 05:53:39
-    ## 2             0.99328 2021-08-06 05:49:44 2021-08-06 05:50:54
-    ## 3             0.99445 2021-08-06 05:49:25 2021-08-06 05:50:55
-    ## 4             0.99274 2021-08-06 05:49:43 2021-08-06 05:50:31
-    ## 5             0.99399 2021-08-06 05:46:33 2021-08-06 05:47:40
-    ## 6             0.99454 2021-08-06 05:46:02 2021-08-06 05:47:10
-    ##   TrainingElapsedTimeSeconds
-    ## 1                         58
-    ## 2                         70
-    ## 3                         90
-    ## 4                         48
-    ## 5                         67
-    ## 6                         68
+    ##   alpha colsample_bytree        eta max_depth num_round                            TrainingJobName
+    ## 1     2        0.6871357 0.13871194        15       241 churn-xgb-2021-08-06-03-56-45-100-03dd1b49
+    ## 2     2        0.5947285 0.09493995        14       500 churn-xgb-2021-08-06-03-56-45-099-29087499
+    ## 3     1        0.5546992 0.04806042        15       498 churn-xgb-2021-08-06-03-56-45-098-f9263ea8
+    ##
+    ##   TrainingJobStatus FinalObjectiveValue   TrainingStartTime     TrainingEndTime TrainingElapsedTimeSeconds
+    ## 1         Completed             0.99394 2021-08-06 05:52:41 2021-08-06 05:53:39                         58
+    ## 2         Completed             0.99328 2021-08-06 05:49:44 2021-08-06 05:50:54                         70
+    ## 3         Completed             0.99445 2021-08-06 05:49:25 2021-08-06 05:50:55                         90
+    
 
-Plot a time series chart that shows how AUC developed over 50 training
+Plot a time series chart that shows how AUC developed over 100 training
 jobs, tuned by the Bayesian optimizer.
 
     ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
@@ -1191,6 +1174,7 @@ the search space that produced the best models.
       theme_dark()
 
 <img src="index_files/figure-markdown_strict/chunk40.3-1.png" style="display: block; margin: auto;" />
+
 
 ## 🏆 Select Best Models
 
@@ -1448,7 +1432,7 @@ Save and submit to SLICED s01e07 on Kaggle.
 
 The evaluation algorithm for this competition was **LogLoss**, so the
 lowest score wins. My submission scored **0.07622**, which would have
-been 8th place (of 36 competitors). The winning score was **0.06800**.
+been 8th place (out of 36 competitors and 130 submissions). The winning score was **0.06800**.
 Competitors only had 2 hours to submit, so this is not a fair
 comparison, but it does show how a well-tuned XGBoost model can make
 great predictions without much feature engineering. To improve the

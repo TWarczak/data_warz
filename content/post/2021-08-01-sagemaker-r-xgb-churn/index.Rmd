@@ -3,7 +3,7 @@ title: "Predicting Bank Customer Churn using AWS SageMaker and XGBoost in Local 
 output: md_document
 author: Todd Warczak
 date: '2021-08-03'
-slug: modeltime
+slug: SageMaker
 categories:
    - rstats
    - AWS
@@ -660,7 +660,6 @@ final_metrics_1 <-  map_df(training_job_stats$FinalMetricDataList,
 final_metrics_1
 ```
 
-
 ### Step 6 - Fit model on test data
 
 Use Batch Transform, a SageMaker feature for generating batch inferences.
@@ -716,7 +715,7 @@ test_results_1 <- tibble(truth       = churn_test$attrition_flag,
                          predictions = test_predictions_1 )
 ```
 
-````{r chunk29.2, cache=TRUE}
+```{r chunk29.2, cache=TRUE}
 head(test_results_1)
 ```
 
@@ -743,6 +742,7 @@ conf_matrix_1 <- caret::confusionMatrix(factor(ifelse(test_results_1$predictions
                                                 labels = c("retained", "churned")),
                                          positive = "churned")
 ```
+
 ```{r chunk31.2, cache=TRUE}
 conf_matrix_1
 ```
@@ -831,12 +831,13 @@ session$describe_tuning_job(job_name_y)[["HyperParameterTuningJobStatus"]]
 tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics(job_name_y)
 tuning_results_df <- tuning_job_results$dataframe()
 ```
-```{r chunk38.2, cache=TRUE}
-head(tuning_results_df)
+
+```{r chunk38.2, cache=TRUE, paged.print=FALSE}
+head(tuning_results_df, n = 3)
 ```
 
-Plot a time series chart that shows how AUC developed over 50 training jobs, tuned by
-the Bayesian optimizer.
+Plot a time series chart that shows how AUC developed over 100 training jobs, tuned
+by the Bayesian optimizer.
 
 ```{r chunk39, fig.align='center', message=FALSE, warning=FALSE, cache=TRUE}
 ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
@@ -894,6 +895,7 @@ final_metrics_2 <-  map_df(training_job_stats$FinalMetricDataList,
                            ~tibble(metric_name = .x[["MetricName"]],
                                    value       = .x[["Value"]]))
 ```
+
 ```{r chunk41.2, cache=TRUE}
 final_metrics_2
 ```
@@ -912,10 +914,10 @@ xgb_batch_predictor_2 <- sagemaker$transformer$Transformer(model_name     = best
                                                            assemble_with  = "Line",
                                                            output_path    = predictions_path_2)
 ```
+
 ```{r chunk42.2, cache=TRUE}
 best_tuned_model
 ```
-
 
 ### Step 12 - Start batch prediction job
 
@@ -1022,6 +1024,7 @@ churn_model <- boto_client$list_models()[["Models"]] %>%
   map_chr("ModelName") %>% 
   .[[1]]
 ```
+
 ```{r chunk49.2, cache=TRUE}
 churn_model
 ```
@@ -1090,7 +1093,8 @@ real_time_predictions_1 <- churn_predictor$predict(data = test_set) %>%
 batch_predictions <- read_csv("./predictions/churn_test.csv.out", 
                               col_names = FALSE, n_max = 5) %>% 
                      .[[1]]
-```  
+```
+
 ```{r chunk55.2, cache=TRUE}
 data.frame(real_time_predictions_1, batch_predictions)
 ```
