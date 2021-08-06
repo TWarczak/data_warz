@@ -1,3 +1,30 @@
+---
+title: "Predicting Bank Customer Churn using AWS SageMaker and XGBoost in Local RStudio"
+output: md_document
+author: Todd Warczak
+date: '2021-08-03'
+slug: modeltime
+categories:
+   - rstats
+   - AWS
+   - SageMaker
+   - XGBoost
+   - R
+tags:
+   - rstats
+   - AWS
+   - reticulate
+   - XGBoost
+   - R
+summary: "For this post, I experimented using AWS SageMaker with the AWS built-in XGBoost algorithm from within my local RStudio to predict whether a bank customer has churned. The data comes from the SLICED season 1 episode 7 Kaggle competition. SLICED is a data science competition where contestants are given a never-before-seen dataset and two-hours to code a solution to a prection challenge."
+featured: "featured-sagemaker.png"
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: true
+---
+
+
     library(tidymodels)
     library(tidyverse)
     library(corrmorant)    # correlation matrix
@@ -5,7 +32,7 @@
     library(reticulate)    # calling the SageMaker Python SDK from R
     library(pROC)          # ROC curves
     library(viridis)       # color palletes
-    library(caret)         # 
+    library(caret)         # confusion matrix 
 
 -   [🥅 Project Goal](#goal)
 -   [🗂 Obtain Data](#data)
