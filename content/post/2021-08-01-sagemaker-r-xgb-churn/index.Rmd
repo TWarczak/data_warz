@@ -17,14 +17,15 @@ tags:
    - XGBoost
    - R
 summary: "For this post, I experimented using AWS SageMaker with the AWS built-in XGBoost algorithm from within my local RStudio to predict whether a bank customer has churned. The data comes from the SLICED season 1 episode 7 Kaggle competition. SLICED is a data science competition where contestants are given a never-before-seen dataset and two-hours to code a solution to a prection challenge."
+featured: "featured-sagemaker.png"
 image:
-   caption: ''
-   focal_point: ''
-   preview_only: true
+  caption: ''
+  focal_point: ''
+  preview_only: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r library, echo=TRUE}
@@ -411,7 +412,7 @@ and the `{reticulate}` package.
 
 This code works on the AWS 'Free Tier' btw.
 
-```{r chunk13}
+```{r chunk13, eval=FALSE}
 use_condaenv("sagemaker-r", required = TRUE)
 sagemaker <- import("sagemaker")
 session <- sagemaker$Session()
@@ -424,7 +425,7 @@ training job we run in this project, with an `output` subfolder containing the m
 artifacts. Any model used to make predictions will also have a `predictions`
 subfolder.
 
-```{r chunk14}
+```{r chunk14, eval=FALSE}
 # bucket <- session$default_bucket()
 bucket <- "twarczak-sagemaker3"
 project <- "churn"    # keep short. 32 character max job_name
@@ -441,9 +442,8 @@ about this version of XGBoost, hyperparameters, metrics, etc. can be found here
 
 I am also using the original data, not the dataframes I manipulated for our EDA.
 
-```{r chunk15, cache=TRUE}
+```{r chunk15, cache=TRUE, eval=FALSE}
 # Make 70/15/15 Train/Validate/Test split
-
 set.seed(333)
 splits  <- initial_split(churn_data, prop = 0.70, strata = attrition_flag)
 
@@ -465,7 +465,7 @@ transformations, but we need to one-hot encode the categorical features. SageMak
 XGBoost doesn't want id variables and the target (`attrition_flag`) must be the first
 column. We'll also remove the table header later.
 
-```{r chunk16, message=FALSE, warning=FALSE, cache=TRUE}
+```{r chunk16, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
 churn_rec <- recipe(attrition_flag ~ ., data = train) %>% 
              step_dummy(all_nominal_predictors(), one_hot = TRUE) %>% 
              step_rm(id) %>% 
@@ -512,7 +512,7 @@ Save the pre-processed data. The test set must lack the target variable.
 Save `churn_holdout_id` to join to the predicted values at the very end for our
 SLICED submission.
 
-```{r chunk18, message=FALSE}
+```{r chunk18, message=FALSE, eval=FALSE}
 
 dir.create("../2021-08-01-sagemaker-r-xgb-churn/data") # local
 
@@ -540,7 +540,7 @@ write_csv(id_holdout,
 
 `upload()` from `S3Uploader` moves the preprocessed data to the S3 bucket.
 
-```{r chunk19, cache=TRUE}
+```{r chunk19, cache=TRUE, eval=FALSE}
 s3_uploader <- sagemaker$s3$S3Uploader()
 
 s3_train <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/data/churn_training.csv", 
@@ -581,19 +581,19 @@ you 70-90% on your compute purchase (in my experience).
 Note: With `{reticulate}`, integers in R need to be converted to "long" objects in
 Python, hence the "L" after integers in the script.
 
-```{r chunk20, cache=TRUE}
+```{r chunk20, cache=TRUE, eval=FALSE}
 region <- session$boto_region_name
-# get container image location
+
 container <- sagemaker$image_uris$retrieve(framework = "xgboost", 
                                            region    = region, 
                                            version   = "1.3-1" )
-# get SageMaker execution role stored in .Renviron
+
 role_arn <- Sys.getenv("SAGEMAKER_ROLE_ARN")
-# Create an Estimator object
+
 xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
                                                role               = role_arn,
                                                instance_count     = 1L,
-                                               instance_type      = "ml.m5.4xlarge", 
+                                               instance_type      = "ml.m5.4xlarge",  
                                                volume_size        = 10L, 
                                                max_run            = 300L,
                                                output_path        = models_path,
@@ -609,7 +609,7 @@ No tuning yet. Full list of SageMaker built-in XGBoost hyperparameters here:
 
 Use AUC as metric
 
-```{r chunk21, cache=TRUE}
+```{r chunk21, cache=TRUE, eval=FALSE}
 xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
                                   eval_metric      = "auc",
                                   max_depth        = 5L, 
@@ -623,11 +623,11 @@ xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
 
 ### Step 3 - Define S3 location of data sets and training job name
 
-```{r chunk22, cache=TRUE}
+```{r chunk22, cache=TRUE, eval=FALSE}
 # Create training job name based project organization principles
 algo <- "xgb"    # keep short. 32 character max job_name
 timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S") # timestamp
-job_name_1 <- paste(project, algo, timestamp, sep = "-")
+job_name_x <- paste(project, algo, timestamp, sep = "-")
 s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
                                                  content_type = 'csv')
 s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
@@ -638,25 +638,29 @@ input_data <- list('train'      = s3_train_input,
 
 ### Step 4 - Start training job
 
-```{r chunk23, cache=TRUE}
+```{r chunk23, cache=TRUE, eval=FALSE}
 xgb_estimator$fit(inputs = input_data,
-                  job_name = job_name_1,
+                  job_name = job_name_x,
                   wait = FALSE)  # If TRUE, call will wait until job completes
 ```
 
 ```{r chunk24, cache=TRUE}
-session$describe_training_job(job_name_1)[["TrainingJobStatus"]]
+session$describe_training_job(job_name_x)[["TrainingJobStatus"]]
 ```
 
 ### Step 5 - Evaluate training results
 
-```{r chunk25, cache=TRUE}
-training_job_stats <- session$describe_training_job(job_name = job_name_1)
+```{r chunk25, cache=TRUE, eval=FALSE}
+training_job_stats <- session$describe_training_job(job_name = job_name_x)
 final_metrics_1 <-  map_df(training_job_stats$FinalMetricDataList, 
                            ~tibble(metric_name = .x[["MetricName"]],
                                    value = .x[["Value"]]))
+```
+
+```{r chunk25, cache=TRUE}
 final_metrics_1
 ```
+
 
 ### Step 6 - Fit model on test data
 
@@ -670,34 +674,34 @@ Create Transformer object
 
 -   `output_path` - S3 location for storing prediction results
 
-```{r chunk26, cache=TRUE}
-predictions_path_1 <- paste0(models_path, "/", job_name_1, "/predictions") 
-xgb_batch_predictor <- xgb_estimator$transformer(instance_count = 1L, 
-                                                 instance_type  = "ml.m5.xlarge", 
-                                                 strategy       = "MultiRecord",
-                                                 assemble_with  = "Line",
-                                                 output_path    = predictions_path_1)
+```{r chunk26, cache=TRUE, eval=FALSE}
+predictions_path_1 <- paste0(models_path, "/", job_name_x, "/predictions") 
+xgb_batch_predictor_1 <- xgb_estimator$transformer(instance_count = 1L, 
+                                                   instance_type  = "ml.m5.xlarge", 
+                                                   strategy       = "MultiRecord",
+                                                   assemble_with  = "Line",
+                                                   output_path    = predictions_path_1)
 ```
 
 Fit model to test data with `transform()`
 
 -   `split_type` - Must use "Line" with csv files
 
-```{r chunk27, cache=TRUE}
-xgb_batch_predictor$transform(data         = s3_test, 
-                              content_type = 'text/csv',
-                              split_type   = "Line",
-                              job_name     = job_name_1,
-                              wait         = FALSE) # If TRUE, call waits until job completes
+```{r chunk27, cache=TRUE, eval=FALSE}
+xgb_batch_predictor_1$transform(data         = s3_test, 
+                                content_type = 'text/csv',
+                                split_type   = "Line",
+                                job_name     = job_name_x,
+                                wait         = FALSE) # If TRUE, call waits until job completes
 ```
 
 ```{r chunk28, cache=TRUE}
-session$describe_transform_job(job_name_1)[["TransformJobStatus"]]
+session$describe_transform_job(job_name_x)[["TransformJobStatus"]]
 ```
 
 ### Step 7 - Download & evaluate predictions
 
-```{r chunk29, message=FALSE, warning=FALSE, cache=TRUE}
+```{r chunk29, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
 s3_downloader <- sagemaker$s3$S3Downloader()
 s3_test_predictions_path_1 <- s3_downloader$list(predictions_path_1)
  
@@ -710,7 +714,9 @@ test_predictions_1 <- read_csv("./predictions/churn_test.csv.out",
 
 test_results_1 <- tibble(truth       = churn_test$attrition_flag,
                          predictions = test_predictions_1 )
+```
 
+````{r chunk29.2, cache=TRUE}
 head(test_results_1)
 ```
 
@@ -728,7 +734,7 @@ roc_obj_1 <- pROC::roc(test_results_1$truth,
 
 AUC: 0.989
 
-```{r chunk31, message=FALSE, warning=FALSE, cache=TRUE}
+```{r chunk31, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
 conf_matrix_1 <- caret::confusionMatrix(factor(ifelse(test_results_1$predictions >= 0.5, 1, 0),
                                                 levels = c("0", "1"), 
                                                 labels = c("retained", "churned")),
@@ -736,7 +742,8 @@ conf_matrix_1 <- caret::confusionMatrix(factor(ifelse(test_results_1$predictions
                                                 levels = c(0, 1), 
                                                 labels = c("retained", "churned")),
                                          positive = "churned")
-
+```
+```{r chunk31.2, cache=TRUE}
 conf_matrix_1
 ```
 
@@ -758,14 +765,14 @@ conf_matrix_1
 
 **Static**
 
-```{r chunk32, cache=TRUE}
+```{r chunk32, cache=TRUE, eval=FALSE}
 xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
                                   min_child_weight = 1 )
 ```
 
 **Tunable**
 
-```{r chunk33, cache=TRUE}
+```{r chunk33, cache=TRUE, eval=FALSE}
 hyperp_ranges <- list(num_round = sagemaker$tuner$IntegerParameter(50L, 500L),
                       max_depth = sagemaker$tuner$IntegerParameter(2L, 15L),
                       eta =sagemaker$tuner$ContinuousParameter(0.01,0.4,"Logarithmic"),
@@ -782,7 +789,7 @@ search. There is currently no grid search option. Let's stick with Bayesian.
 
 -   `max_parallel_job`: Number of training jobs executed in parallel
 
-```{r chunk34, cache=TRUE}
+```{r chunk34, cache=TRUE, eval=FALSE}
 tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator,
                                              objective_metric_name = "validation:auc",
                                              objective_type        = "Maximize",
@@ -795,10 +802,10 @@ tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimat
 
 Define S3 location of data sets and tuning job name.
 
-```{r chunk35, cache=TRUE}
+```{r chunk35, cache=TRUE, eval=FALSE}
 algo <- "xgb"
 timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
-job_name_2 <- paste(project, algo, timestamp, sep = "-")
+job_name_y <- paste(project, algo, timestamp, sep = "-")
 s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
                                                  content_type = 'csv')
 s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
@@ -811,19 +818,21 @@ input_data <- list('train'      = s3_train_input,
 
 ```{r chunk36, cache=TRUE}
 tuner$fit(inputs   = input_data, 
-          job_name = job_name_2,
+          job_name = job_name_y,
           wait     = FALSE ) # If TRUE, call will wait until job completes
 ```
 
 ```{r chunk37, cache=TRUE}
-session$describe_tuning_job(job_name_2)[["HyperParameterTuningJobStatus"]]
+session$describe_tuning_job(job_name_y)[["HyperParameterTuningJobStatus"]]
 ```
 
 ### Step 10 - Evaluate tuning job results
 
 ```{r chunk38, cache=TRUE}
-tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics(job_name_2)
+tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics(job_name_y)
 tuning_results_df <- tuning_job_results$dataframe()
+```
+```{r chunk38.2, cache=TRUE}
 head(tuning_results_df)
 ```
 
