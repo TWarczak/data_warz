@@ -2,7 +2,7 @@ For this post, I experimented using AWS SageMaker with the AWS built-in XGBoost 
 
 *** 
 
-### [Forecasting Daily Sales with Modeltime](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-08-01-sagemaker-r-xgb-churn) Source: [Kaggle](https://www.kaggle.com/c/sliced-s01e07-HmPsw2)
+### [Predicting Bank Customer Churn with AWS SageMaker, XGBoost, & RStudio](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-08-01-sagemaker-r-xgb-churn) Source: [Kaggle](https://www.kaggle.com/c/sliced-s01e07-HmPsw2)
 
 ***
 
