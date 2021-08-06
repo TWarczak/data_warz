@@ -69,16 +69,21 @@ twarczak@gmail.com\
 
 ### Molecular Biologist
 #### 2012 - 2020
-* Engineered genome-wide association study (GWAS) to identify genes controlling arsenic tolerance in plants. Determined variation in the expression of Arabidopsis gene *NIP1;1* on 4th chromosome as the major genetic factor for tolerating arsenic. All data analyzed in R.
-* Developed the first cell-type specific expression map in R for plant genes involved in arsenic acquisition, efflux, sequestration, etc. for root epidermal, cortical, and endodermal cells.
-* Built first RNA-seq pipeline for research lab to analyze gene expression of 25000+ plant genes using R. Transitioned multiple lab data analysis workflows from excel to R, including PCA, qPCR, Gene Ontology analysis, and statistical tests (t-tests, ANOVA, etc.).
+* Engineered genome-wide association study (GWAS) to identify genes controlling arsenic tolerance in plants. Determined Arabidopsis gene NIP1;1 on 4th chromosome as the major genetic factor for tolerating arsenic. All data cleaned/wrangled/analyzed in R.
+* Built lab RNA-seq pipeline for gene expression of 25000+ plant genes with R scripts for unsupervised learning (PCA, hierarchical clustering), regression (GLMs/ANOVA), exploratory data analysis, and statistical tests.
+* Developed first cell-type specific expression maps for plant genes involved in root arsenic acquisition, efflux, and sequestration (using R).
 * Presented research to local community members, government officials, and other stakeholders as a representative of the Dartmouth Toxic Metals Superfund Research Program.
 * Mentored 2 undergratuate scientists.
 
 ## Recent Projects {.divider}
 
+### Predicting Churn using AWS SageMaker & Local RStudio
+* Utilized SageMaker and built-in XGBoost algorithm to train, tune, evaluate, and deploy model for predicting bank customer churn in the SLICED season 1 episode 7 Kaggle competition. ([Blog](https://toddwarczak.netlify.app/post/sagemaker/), [Github](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-08-01-sagemaker-r-xgb-churn))
+* Configured local RStudio to make API calls to SageMaker using SageMaker Python SDK and {reticulate} R package.
+* Best performing model deployed as SageMaker endpoint for real-time predictions on holdout data (w/ minimal feature engineering and pre-processing). Predictions submitted to SLICED competition received a score of 0.07622 (LogLoss), which would have placed 8th out of 130 entries.
+
 ### Forecasting Daily Sales with Modeltime
-* Forecasted 3 months of daily sales utilizing the {modeltime} package in R to help ‘Superstore’ company selling furniture, technology, and office supplies manage supply-chain and inventory decisions in Q1 (data source: Kaggle). [blog](https://toddwarczak.netlify.app/post/modeltime/)
+* Forecasted 3 months of daily sales utilizing the {modeltime} package in R to help ‘Superstore’ company selling furniture, technology, and office supplies manage supply-chain and inventory decisions in Q1 (data source: Kaggle). ([Blog](https://toddwarczak.netlify.app/post/modeltime/), [Github](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime)
 * Exploratory data analysis and 11 models tested. 6 {tidymodels} workflows tuned for individual forecasts and weighted ensemble (Support Vector Machine/Neural Network-AR/Random Forest/Prophet-XGboost) forecast.
 
 ### TidyTuesday
@@ -87,13 +92,16 @@ twarczak@gmail.com\
 * Survivor - Visualization showing Myers-Briggs Type Indicator personalities of all show contestants vs. the winners.
 
 ## Data Science Skills {.divider}
-  * R {tidyverse} {tidymodels}
+  * R ★★★★
+  * Python ★★
+  * AWS SageMaker/S3/EC2...
   * SQL
   * GitHub
-  * Markdown
-  * Data Cleaning
-  * Data Manipulation
+  * Markdown/Jupyter Notebooks
+  * Data Cleaning/Wrangling
   * Data Visualization
   * Probability/Statistics
   * Machine Learning
+  * Regression/Classification
   * Time-Series Forecasting
+  * TensorFlow/Tidymodels/H2O...
