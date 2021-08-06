@@ -46,12 +46,12 @@ image:
     library(viridis)       # color palletes
     library(caret)         # confusion matrix
                       
-## 🥅 Goal of this Project
+## 🥅 Goal of this Project {#goal}
 
 Predict whether a bank customer will churn using AWS SageMaker and
 RStudio
 
-## 🗂 Obtain Data
+## 🗂 Obtain Data {#data}
 
 The data comes from the Kaggle competition
 [SLICED](https://www.kaggle.com/c/sliced-s01e07-HmPsw2/overview).
@@ -67,7 +67,7 @@ SLICED competition, we’ll need a .csv file that contains only 2 columns:
 “id” (those found in `holdout`) and inferred `attrition_flag`. That will
 be our final step.
 
-## 🛁 Clean Data
+## 🛁 Clean Data {#clean}
 
     glimpse(churn_data)
 
@@ -403,7 +403,7 @@ Not much cleaning to do. No missing data. For EDA I want the
 or not. I’ll factor the categorical variables and experiment with log
 transforming some numeric variables.
 
-## 🔭 Explore Data
+## 🔭 Explore Data {#explore}
 
     churn_data2 <- churn_data %>% 
       mutate(churned = factor(ifelse(attrition_flag == 1, "yes", "no"),
@@ -676,7 +676,7 @@ At least the data has consistantly low churn (12%-21%) across all
 categorical values. I’d guess the numeric features are more important
 based on what we’ve seen.
 
-## 🧮 AWS Setup
+## 🧮 AWS Setup {#aws}
 
 Now it’s time to model. You need to set up your own AWS account and get
 RStudio connected. Alex Lemm has a great repo that guides you through
@@ -822,7 +822,7 @@ bucket.
     s3_test <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/data/churn_test.csv", 
                                   desired_s3_uri = data_path)
 
-## 🏗 Train XGBoost model
+## 🏗 Train XGBoost model {#build}
 
 ### Step 1 - Create an Estimator object
 
@@ -1055,7 +1055,7 @@ AUC: 0.989
 
 -   False Positives: **6**
 
-## 🔧 Tune XGBoost
+## 🔧 Tune XGBoost {#tune}
 
 ### Step 8 - Set hyperparameters
 
@@ -1176,7 +1176,7 @@ the search space that produced the best models.
 <img src="index_files/figure-markdown_strict/chunk40.3-1.png" style="display: block; margin: auto;" />
 
 
-## 🏆 Select Best Models
+## 🏆 Select Best Models {#best}
 
     best_tuned_model <- tuning_results_df %>%
                         #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
@@ -1410,7 +1410,7 @@ Perfect!
 
 1 model, 2 prediction pipelines, same results.
 
-## 🎯 Predict w/ Holdout
+## 🎯 Predict w/ Holdout {#holdout}
 
 Use the endpoint to predict churn from our holdout data.
 
@@ -1421,7 +1421,7 @@ Use the endpoint to predict churn from our holdout data.
                                .[[1]] %>% 
                                as.numeric()
 
-## 📬 Submission
+## 📬 Submission {#submit}  
 
 Save and submit to SLICED s01e07 on Kaggle.
 
