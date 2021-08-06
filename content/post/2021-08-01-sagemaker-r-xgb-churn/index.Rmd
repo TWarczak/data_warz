@@ -17,12 +17,10 @@ tags:
    - XGBoost
    - R
 summary: "For this post, I experimented using AWS SageMaker with the AWS built-in XGBoost algorithm from within my local RStudio to predict whether a bank customer has churned. The data comes from the SLICED season 1 episode 7 Kaggle competition. SLICED is a data science competition where contestants are given a never-before-seen dataset and two-hours to code a solution to a prection challenge."
-featured: "featured-hex-modeltime.jpeg"
 image:
    caption: ''
    focal_point: ''
    preview_only: true
-output: md_document
 ---
 
 ```{r setup, include=FALSE}
