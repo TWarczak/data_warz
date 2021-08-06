@@ -20,11 +20,14 @@ bio: Doubling down with R for a career in data science. Relocating to Seattle.
 
 # Interests to show in About widget
 interests:
-- R for Data Science
+- Machine Learning
+- Deep Learning
 - Data Analysis
-- Modeling
-- Time-Series Forecasting
 - Data Visualization
+- Time-Series Forecasting
+- Regression/Classification
+- R for Data Science
+- AWS Cloud Tools
 
 # Education to show in About widget
 education:
