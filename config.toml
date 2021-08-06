@@ -59,7 +59,7 @@ path = "github.com/wowchemy/wowchemy-hugo-modules/wowchemy-cms"
 path = "github.com/wowchemy/wowchemy-hugo-modules/wowchemy"
 
 [outputs]
-home = ["HTML", "RSS", "JSON", "WebAppManifest", "headers", "redirects"]
+home = ["HTML", "RSS", "JSON", "headers", "redirects"]
 section = ["HTML", "RSS"]
 
 [permalinks]
