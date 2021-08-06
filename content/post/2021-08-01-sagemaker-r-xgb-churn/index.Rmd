@@ -248,7 +248,7 @@ combination of feature values (yellow).
 Now let's get a count for each categorical variable and a percentage churn for each
 category to see how balanced the dataset is.
 
-```{r chunk10, echo=FALSE, cache=TRUE}
+```{r chunk10, cache=TRUE}
 cat_feat <- churn_data2 %>% 
   select(c(gender, education_level, income_category, churned))
 
@@ -325,7 +325,7 @@ negative churn outcome, but I'll let it slide this time.\
 
 How balanced are the categorical predictors?
 
-```{r chunk11, echo=FALSE, cache=TRUE}
+```{r chunk11, cache=TRUE}
 gen <- ggplot(cat_feat %>% 
                 group_by(gender, churned) %>% 
                 summarise(n = n()) %>% 
@@ -382,10 +382,9 @@ inc <- ggplot(cat_feat %>%
 ed + inc + gen +
     plot_layout(ncol = 2, heights = c(2,0.7)) +
     plot_annotation(title = "Percentage of Each Categorical Variable that Churned")
-
 ```
 
-```{r chunk12, echo=FALSE, cache=TRUE}
+```{r chunk12, cache=TRUE}
 cat_feat %>%
   pivot_longer(gender:income_category) %>%
   ggplot(aes(y = value, fill = churned)) +
@@ -638,7 +637,7 @@ input_data <- list('train'      = s3_train_input,
 
 ### Step 4 - Start training job
 
-```{r chunk23, cache=TRUE, eval=FALSE}
+```{r chunk23, cache=TRUE}
 xgb_estimator$fit(inputs = input_data,
                   job_name = job_name_x,
                   wait = FALSE)  # If TRUE, call will wait until job completes
@@ -676,11 +675,12 @@ Create Transformer object
 
 ```{r chunk26, cache=TRUE, eval=FALSE}
 predictions_path_1 <- paste0(models_path, "/", job_name_x, "/predictions") 
-xgb_batch_predictor_1 <- xgb_estimator$transformer(instance_count = 1L, 
-                                                   instance_type  = "ml.m5.xlarge", 
-                                                   strategy       = "MultiRecord",
-                                                   assemble_with  = "Line",
-                                                   output_path    = predictions_path_1)
+
+xgb_batch_predictor_1 <- xgb_estimator$transformer(instance_count     = 1L, 
+                                                   instance_type      = "ml.m5.4xlarge", 
+                                                   strategy           = "MultiRecord",
+                                                   assemble_with      = "Line",
+                                                   output_path        = predictions_path_1 )
 ```
 
 Fit model to test data with `transform()`
@@ -747,17 +747,17 @@ conf_matrix_1 <- caret::confusionMatrix(factor(ifelse(test_results_1$predictions
 conf_matrix_1
 ```
 
--   Accuracy: **0.9699**
+-   Accuracy: **0.9671**
 
--   Sensitivity: **0.8353**
+-   Sensitivity: **0.8294**
 
--   Specificity: **0.9955**
+-   Specificity: **0.9933**
 
--   Kappa: **0.8812**
+-   Kappa: **0.8704**
 
--   False Negatives: **28**
+-   False Negatives: **29**
 
--   False Positives: **4**
+-   False Positives: **6**
 
 ## 🔧 Tune XGBoost {#tune}
 
@@ -795,9 +795,8 @@ tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimat
                                              objective_type        = "Maximize",
                                              hyperparameter_ranges = hyperp_ranges, 
                                              strategy              = "Bayesian",
-                                             max_jobs              = 50L,
-                                             max_parallel_jobs     = 2L )
-
+                                             max_jobs              = 100L,
+                                             max_parallel_jobs     = 3L )
 ```
 
 Define S3 location of data sets and tuning job name.
@@ -816,7 +815,7 @@ input_data <- list('train'      = s3_train_input,
 
 ### Step 9 - Start tuning job
 
-```{r chunk36, cache=TRUE}
+```{r chunk36, cache=TRUE, eval=FALSE}
 tuner$fit(inputs   = input_data, 
           job_name = job_name_y,
           wait     = FALSE ) # If TRUE, call will wait until job completes
@@ -828,7 +827,7 @@ session$describe_tuning_job(job_name_y)[["HyperParameterTuningJobStatus"]]
 
 ### Step 10 - Evaluate tuning job results
 
-```{r chunk38, cache=TRUE}
+```{r chunk38, cache=TRUE, eval=FALSE}
 tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics(job_name_y)
 tuning_results_df <- tuning_job_results$dataframe()
 ```
@@ -845,7 +844,7 @@ ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
   xlab("Time") +
   ylab(tuning_job_results$description()$TrainingJobDefinition$StaticHyperParameters$`_tuning_objective_metric`) +
   ggtitle("Hyperparameter tuning AUC",  
-          "Progression over the period of all 50 training jobs") +
+          "Progression over the period of all 100 training jobs") +
   theme_minimal()
 ```
 
@@ -881,25 +880,27 @@ ggplot(tuning_results_df, aes(num_round, max_depth)) +
 
 ## 🏆 Select Best Models {#best}
 
-```{r chunk41, message=FALSE, warning=FALSE, cache=TRUE}
+```{r chunk41, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
 
 best_tuned_model <- tuning_results_df %>%
                     #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
                     arrange(desc(FinalObjectiveValue)) %>% 
                     head(n=1) %>% pull(TrainingJobName)
 
-best_tuned_model
+#best_tuned_model
 training_job_stats <- session$describe_training_job(job_name = best_tuned_model)
 
 final_metrics_2 <-  map_df(training_job_stats$FinalMetricDataList, 
                            ~tibble(metric_name = .x[["MetricName"]],
                                    value       = .x[["Value"]]))
+```
+```{r chunk41.2, cache=TRUE}
 final_metrics_2
 ```
 
 ### Step 11 - Create transformer object
 
-```{r chunk42}
+```{r chunk42, cache=TRUE, eval=FALSE}
 predictions_path_2 <- paste0(models_path, "/", best_tuned_model, "/predictions")
 
 session$create_model_from_job(best_tuned_model)
@@ -911,15 +912,19 @@ xgb_batch_predictor_2 <- sagemaker$transformer$Transformer(model_name     = best
                                                            assemble_with  = "Line",
                                                            output_path    = predictions_path_2)
 ```
+```{r chunk42.2, cache=TRUE}
+best_tuned_model
+```
+
 
 ### Step 12 - Start batch prediction job
 
-```{r chunk43}
+```{r chunk43, cache=TRUE, eval=FALSE}
 xgb_batch_predictor_2$transform(data         = s3_test, 
                                 content_type = 'text/csv',
                                 split_type   = "Line",
                                 job_name     = best_tuned_model,
-                                wait         = FALSE  ) # If TRUE, call will wait until job completes
+                                wait         = FALSE) # If TRUE, call will wait until job completes
 
 ```
 
@@ -929,7 +934,7 @@ session$describe_transform_job(best_tuned_model)[["TransformJobStatus"]]
 
 ### Step 13 - Download test set predictions
 
-```{r chunk45, cache=TRUE}
+```{r chunk45, cache=TRUE, eval=FALSE}
 s3_downloader <- sagemaker$s3$S3Downloader()
 
 s3_test_predictions_path_2 <- s3_downloader$list(predictions_path_2)
@@ -946,7 +951,9 @@ churn_test <- read_csv("./data/churn_test_2.csv")
 
 test_results_2 <- tibble(truth       = churn_test$attrition_flag,
                          predictions = test_predictions_2)
+```
 
+```{r chunk45.2, cache=TRUE}
 head(test_results_2)
 ```
 
@@ -966,7 +973,7 @@ roc_obj_2 <- roc(test_results_2$truth,
 
 Confusion matrix
 
-```{r chunk47, cache=TRUE}
+```{r chunk47, cache=TRUE, eval=FALSE}
 conf_matrix_2 <- confusionMatrix(factor(ifelse(test_results_2$predictions >= 0.5, 1, 0),
                                         levels = c("0", "1"), 
                                         labels = c("retained", "churned")),
@@ -974,21 +981,23 @@ conf_matrix_2 <- confusionMatrix(factor(ifelse(test_results_2$predictions >= 0.5
                                         levels = c(0, 1), 
                                         labels = c("retained", "churned")),           
                                  positive = "churned")
+```
 
+```{r chunk47.2, cache=TRUE}
 conf_matrix_2
 ```
 
--   Accuracy: **0.9727**
+-   Accuracy: **0.9756**
 
 -   Sensitivity: **0.8706**
 
--   Specificity: **0.9922**
+-   Specificity: **0.9955**
 
--   Kappa: **0.8947**
+-   Kappa: **0.9049**
 
 -   False Negatives: **22**
 
--   False Positives: **7**
+-   False Positives: **4**
 
 ```{r chunk48, eval=FALSE, cache=FALSE, include=FALSE}
 test_results_pred <- test_results_2 %>% 
@@ -1007,12 +1016,13 @@ gmodels::CrossTable(x          = test_results_pred$pred,
 Save this model as our `churn_model`. `boto_client$list_models()` returns the model
 with the best 'Objective metric value' as the first object.
 
-```{r chunk49, cache=TRUE}
+```{r chunk49, cache=TRUE, eval=FALSE}
 boto_client <- session$boto_session$client("sagemaker")
 churn_model <- boto_client$list_models()[["Models"]] %>% 
   map_chr("ModelName") %>% 
   .[[1]]
-
+```
+```{r chunk49.2, cache=TRUE}
 churn_model
 ```
 
@@ -1023,17 +1033,17 @@ more bank customer churn predictions. We still need to run inference on our
 `churn_holdout` data and submit those predictions to the SLICED competition for
 scoring.
 
-```{r chunk50, results='hide', cache=TRUE}
+```{r chunk50, results='hide', cache=TRUE, eval=FALSE}
 config_name <- paste0(churn_model, "-config")
 session$create_endpoint_config(name = config_name,
                                model_name =  churn_model, 
                                initial_instance_count = 1L, 
-                               instance_type = "ml.m5.large")
+                               instance_type = "ml.m5.4xlarge")
 ```
 
 ### Step 16 - Create endpoint
 
-```{r chunk51, results='hide', cache=TRUE}
+```{r chunk51, results='hide', cache=TRUE, eval=FALSE}
 endpoint_name <- "churn-endpoint"
 session$create_endpoint(endpoint_name = endpoint_name, 
                         config_name = config_name,
@@ -1053,7 +1063,7 @@ boto_client$describe_endpoint(EndpointName = endpoint_name)[["EndpointStatus"]]
 -   Serializer object - Encodes data for inference endpoint
 -   Deserializer object - Decodes data from inference endpoint
 
-```{r chunk53, cache=TRUE}
+```{r chunk53, cache=TRUE, eval=FALSE}
 csv_serializer <- sagemaker$serializers$CSVSerializer()
 csv_deserializer <- sagemaker$deserializers$CSVDeserializer()
 churn_predictor <- sagemaker$predictor$Predictor(endpoint_name     = endpoint_name, 
@@ -1066,7 +1076,7 @@ Let's just check the first 5 test_set entries to make sure it worked. We already
 a batch transform job, so the results should be the same. This is just to test the
 endpoint.
 
-```{r chunk54, message=FALSE, cache=TRUE}
+```{r chunk54, message=FALSE, cache=TRUE, eval=FALSE}
 test_set <- read_csv("./data/churn_test.csv", 
                      col_names = FALSE, 
                      n_max     = 5) %>% 
@@ -1076,11 +1086,12 @@ real_time_predictions <- churn_predictor$predict(data = test_set) %>%
                          as.numeric()
 ```
 
-```{r chunk55, message=FALSE, cache=TRUE}
+```{r chunk55, message=FALSE, cache=TRUE, eval=FALSE}
 batch_predictions <- read_csv("./predictions/churn_test.csv.out", 
                               col_names = FALSE, n_max = 5) %>% 
                      .[[1]]
-  
+```  
+```{r chunk55.2, cache=TRUE}
 data.frame(real_time_predictions, batch_predictions)
 ```
 
@@ -1092,7 +1103,7 @@ Perfect!
 
 Use the endpoint to predict churn from our holdout data.
 
-```{r chunk56, message=FALSE, cache=TRUE}
+```{r chunk56, message=FALSE, cache=TRUE, eval=FALSE}
 holdout_set <- read_csv("./data/churn_holdout.csv", 
                         col_names = FALSE) %>% 
                as.matrix()
@@ -1105,7 +1116,7 @@ real_time_predictions <- churn_predictor$predict(data = holdout_set) %>%
 
 Save and submit to SLICED s01e07 on Kaggle.
 
-```{r chunk57, message=FALSE, warning=FALSE, cache=TRUE}
+```{r chunk57, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
 churn_holdout_id <- read_csv("data/churn_holdout_id.csv", col_names = FALSE)
 submission <- data.frame(churn_holdout_id, real_time_predictions ) %>% 
               rename(id = X1, attrition_flag = real_time_predictions)
