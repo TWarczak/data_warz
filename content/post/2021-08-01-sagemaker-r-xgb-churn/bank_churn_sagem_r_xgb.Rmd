@@ -399,6 +399,8 @@ cat_feat %>%
 At least the data has consistantly low churn (12%-21%) across all categorical values.
 I'd guess the numeric features are more important based on what we've seen.
 
+## 🧮 AWS Setup {#aws}
+
 Now it's time to model. You need to set up your own AWS account and get RStudio
 connected. Alex Lemm has a great repo that guides you through configuring RStudio to
 work with AWS tools
@@ -465,7 +467,7 @@ transformations, but we need to one-hot encode the categorical features. SageMak
 XGBoost doesn't want id variables and the target (`attrition_flag`) must be the first
 column. We'll also remove the table header later.
 
-```{r chunk16, cache=TRUE}
+```{r chunk16, message=FALSE, warning=FALSE, cache=TRUE}
 churn_rec <- recipe(attrition_flag ~ ., data = train) %>% 
              step_dummy(all_nominal_predictors(), one_hot = TRUE) %>% 
              step_rm(id) %>% 
@@ -553,14 +555,14 @@ s3_test <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/
                               desired_s3_uri = data_path)
 ```
 
-## 🏗 Train the XGBoost model
+## 🏗 Train XGBoost model {#build}
 
 ### Step 1 - Create an Estimator object
 
 Need
 
--   `image_name`  - Location of built-in XGBoost docker container image in AWS
-    Elastic Container Registry (ECR)
+-   `image_name` - Location of built-in XGBoost docker container image in AWS Elastic
+    Container Registry (ECR)
 
 -   `role` - AWS Identify and Access Management (IAM)
 
@@ -593,7 +595,7 @@ role_arn <- Sys.getenv("SAGEMAKER_ROLE_ARN")
 xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
                                                role               = role_arn,
                                                instance_count     = 1L,
-                                               instance_type      = "ml.m5.4xlarge" 
+                                               instance_type      = "ml.m5.4xlarge", 
                                                volume_size        = 10L, 
                                                max_run            = 300L,
                                                output_path        = models_path,
@@ -605,9 +607,9 @@ xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
 ### Step 2 - Set static hyperparameters
 
 No tuning yet. Full list of SageMaker built-in XGBoost hyperparameters here:
-[XGBoost](<https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost_hyperparameters.html>).
+[XGBoost](https://docs.aws.amazon.com/sagemaker/latest/dg/xgboost_hyperparameters.html).
 
-Use AUC as metric.
+Use AUC as metric
 
 ```{r chunk21, cache=TRUE}
 xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
@@ -697,7 +699,7 @@ session$describe_transform_job(job_name_1)[["TransformJobStatus"]]
 
 ### Step 7 - Download & evaluate predictions
 
-```{r chunk29, cache=TRUE}
+```{r chunk29, message=FALSE, warning=FALSE, cache=TRUE}
 s3_downloader <- sagemaker$s3$S3Downloader()
 s3_test_predictions_path_1 <- s3_downloader$list(predictions_path_1)
  
@@ -714,7 +716,7 @@ test_results_1 <- tibble(truth       = churn_test$attrition_flag,
 head(test_results_1)
 ```
 
-```{r chunk30, cache=TRUE}
+```{r chunk30, message=FALSE, warning=FALSE, cache=TRUE}
 roc_obj_1 <- pROC::roc(test_results_1$truth,
                        test_results_1$predictions,
                        plot        = TRUE,         
@@ -726,9 +728,9 @@ roc_obj_1 <- pROC::roc(test_results_1$truth,
                        col         = "red2" )
 ```
 
-AUC:
+AUC: 0.989
 
-```{r chunk31, cache=TRUE}
+```{r chunk31, message=FALSE, warning=FALSE, cache=TRUE}
 conf_matrix_1 <- caret::confusionMatrix(factor(ifelse(test_results_1$predictions >= 0.5, 1, 0),
                                                 levels = c("0", "1"), 
                                                 labels = c("retained", "churned")),
@@ -740,30 +742,32 @@ conf_matrix_1 <- caret::confusionMatrix(factor(ifelse(test_results_1$predictions
 conf_matrix_1
 ```
 
--   Accuracy: **0.9746**
+-   Accuracy: **0.9699**
 
--   Sensitivity: **0.8824**
+-   Sensitivity: **0.8353**
 
--   Specificity: **0.9922**
+-   Specificity: **0.9955**
 
--   Kappa: **0.9025**
+-   Kappa: **0.8812**
 
--   False Negatives: **20**
+-   False Negatives: **28**
 
--   False Positives: **7**
+-   False Positives: **4**
+
+## 🔧 Tune XGBoost {#tune}
 
 ### Step 8 - Set hyperparameters
 
 **Static**
 
-```{r chunk32}
+```{r chunk32, cache=TRUE}
 xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
                                   min_child_weight = 1 )
 ```
 
 **Tunable**
 
-```{r chunk33}
+```{r chunk33, cache=TRUE}
 hyperp_ranges <- list(num_round = sagemaker$tuner$IntegerParameter(50L, 500L),
                       max_depth = sagemaker$tuner$IntegerParameter(2L, 15L),
                       eta =sagemaker$tuner$ContinuousParameter(0.01,0.4,"Logarithmic"),
@@ -780,7 +784,7 @@ search. There is currently no grid search option. Let's stick with Bayesian.
 
 -   `max_parallel_job`: Number of training jobs executed in parallel
 
-```{r chunk34}
+```{r chunk34, cache=TRUE}
 tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator,
                                              objective_metric_name = "validation:auc",
                                              objective_type        = "Maximize",
@@ -793,7 +797,7 @@ tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimat
 
 Define S3 location of data sets and tuning job name.
 
-```{r chunk35}
+```{r chunk35, cache=TRUE}
 algo <- "xgb"
 timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
 job_name_2 <- paste(project, algo, timestamp, sep = "-")
@@ -807,7 +811,7 @@ input_data <- list('train'      = s3_train_input,
 
 ### Step 9 - Start tuning job
 
-```{r chunk36}
+```{r chunk36, cache=TRUE}
 tuner$fit(inputs   = input_data, 
           job_name = job_name_2,
           wait     = FALSE ) # If TRUE, call will wait until job completes
@@ -828,7 +832,7 @@ head(tuning_results_df)
 Plot a time series chart that shows how AUC developed over 50 training jobs, tuned by
 the Bayesian optimizer.
 
-```{r chunk39, fig.align='center', cache=TRUE}
+```{r chunk39, fig.align='center', message=FALSE, warning=FALSE, cache=TRUE}
 ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
   geom_point() +
   xlab("Time") +
@@ -838,7 +842,7 @@ ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
   theme_minimal()
 ```
 
-The next plot shows how the Bayesian optimizer focused on the region of the search
+The next plots show how the Bayesian optimizer focused on the region of the search
 space that produced the best models.
 
 ```{r chunk40, fig.align='center', cache=TRUE}
@@ -850,16 +854,34 @@ ggplot(tuning_results_df, aes(num_round, eta)) +
   theme_dark()
 ```
 
-Extract the best tuning job.
+```{r chunk40.2, fig.align='center', cache=TRUE}
+ggplot(tuning_results_df, aes(colsample_bytree, alpha)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_viridis("AUC", option = "H") +
+  ggtitle("Hyperparameter tuning AUC", 
+          "Using a Bayesian strategy") +
+  theme_dark()
+```
 
-```{r chunk41, cache=TRUE}
+```{r chunk40.3, fig.align='center', cache=TRUE}
+ggplot(tuning_results_df, aes(num_round, max_depth)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_viridis("AUC", option = "H") +
+  ggtitle("Hyperparameter tuning AUC", 
+          "Using a Bayesian strategy") +
+  theme_dark()
+```
+
+## 🏆 Select Best Models {#best}
+
+```{r chunk41, message=FALSE, warning=FALSE, cache=TRUE}
+
 best_tuned_model <- tuning_results_df %>%
-                    filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
-                    filter(alpha == 1) %>%   # there were 2 jobs with max value
-                    pull(TrainingJobName)
+                    #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
+                    arrange(desc(FinalObjectiveValue)) %>% 
+                    head(n=1) %>% pull(TrainingJobName)
 
 best_tuned_model
-
 training_job_stats <- session$describe_training_job(job_name = best_tuned_model)
 
 final_metrics_2 <-  map_df(training_job_stats$FinalMetricDataList, 
@@ -918,12 +940,12 @@ churn_test <- read_csv("./data/churn_test_2.csv")
 test_results_2 <- tibble(truth       = churn_test$attrition_flag,
                          predictions = test_predictions_2)
 
-head(test_results)
+head(test_results_2)
 ```
 
 ### Step 14 - Evaluate test set predictions
 
-```{r chunk46, cache=TRUE}
+```{r chunk46, message=FALSE, warning=FALSE, cache=TRUE}
 roc_obj_2 <- roc(test_results_2$truth, 
                  test_results_2$predictions,
                  plot        = TRUE,         
@@ -949,20 +971,20 @@ conf_matrix_2 <- confusionMatrix(factor(ifelse(test_results_2$predictions >= 0.5
 conf_matrix_2
 ```
 
--   Accuracy: **0.9746**
+-   Accuracy: **0.9727**
 
--   Sensitivity: **0.8824**
+-   Sensitivity: **0.8706**
 
 -   Specificity: **0.9922**
 
--   Kappa: **0.9025**
+-   Kappa: **0.8947**
 
--   False Negatives: **20**
+-   False Negatives: **22**
 
 -   False Positives: **7**
 
-```{r chunk48, eval=FALSE, cache=TRUE, include=FALSE}
-test_results_pred <- test_results %>% 
+```{r chunk48, eval=FALSE, cache=FALSE, include=FALSE}
+test_results_pred <- test_results_2 %>% 
                      mutate(pred = factor(ifelse(predictions >= 0.5, 1, 0), 
                                           levels = c("0", "1")))
 
@@ -994,7 +1016,7 @@ more bank customer churn predictions. We still need to run inference on our
 `churn_holdout` data and submit those predictions to the SLICED competition for
 scoring.
 
-```{r chunk50, results='hide'}
+```{r chunk50, results='hide', cache=TRUE}
 config_name <- paste0(churn_model, "-config")
 session$create_endpoint_config(name = config_name,
                                model_name =  churn_model, 
@@ -1004,7 +1026,7 @@ session$create_endpoint_config(name = config_name,
 
 ### Step 16 - Create endpoint
 
-```{r chunk51, results='hide'}
+```{r chunk51, results='hide', cache=TRUE}
 endpoint_name <- "churn-endpoint"
 session$create_endpoint(endpoint_name = endpoint_name, 
                         config_name = config_name,
@@ -1059,6 +1081,8 @@ Perfect!
 
 1 model, 2 prediction pipelines, same results.
 
+## 🎯 Predict w/ Holdout {#holdout}
+
 Use the endpoint to predict churn from our holdout data.
 
 ```{r chunk56, message=FALSE, cache=TRUE}
@@ -1070,9 +1094,11 @@ real_time_predictions <- churn_predictor$predict(data = holdout_set) %>%
                          as.numeric()
 ```
 
+## 📬 Submission {#submit}
+
 Save and submit to SLICED s01e07 on Kaggle.
 
-```{r chunk57, cache=TRUE }
+```{r chunk57, message=FALSE, warning=FALSE, cache=TRUE}
 churn_holdout_id <- read_csv("data/churn_holdout_id.csv", col_names = FALSE)
 submission <- data.frame(churn_holdout_id, real_time_predictions ) %>% 
               rename(id = X1, attrition_flag = real_time_predictions)
@@ -1084,12 +1110,12 @@ wins. My submission scored **0.07847**, which would have been 10th place (of 36
 competitors). The winning score was **0.06800**. Competitors only had 2 hours to
 submit, so this is not a fair comparison, but it does show how a well-tuned XGBoost
 model can make great predictions without much feature engineering. To improve the
-model, we could log transform numeric variables, down-sample to balance the data,
-and/or remove the low-performing features. There should be room to improve model
-performance.
+model, we could log transform certain numeric variables, up/down-sample with
+`{themis}` to balance the data, remove low-performing features, and/or tune
+additional hyperparameters. There should be room to improve model performance.
 
-(Delete the endpoint so your not billed more $$$)
+(Delete the endpoint so your not billed more \$\$\$)
 
-```{r chunk58}
-#session$delete_endpoint(endpoint_name)
+```{r chunk58, cache=TRUE}
+session$delete_endpoint(endpoint_name)
 ```
