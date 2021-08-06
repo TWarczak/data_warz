@@ -32,7 +32,7 @@ image:
     library(reticulate)    # calling the SageMaker Python SDK from R
     library(pROC)          # ROC curves
     library(viridis)       # color palletes
-    library(caret)         # confusion matrix 
+    library(caret)         # confusion matrix
 
 -   [🥅 Project Goal](#goal)
 -   [🗂 Obtain Data](#data)
@@ -438,8 +438,8 @@ differently based on the churn outcome.
     ggcorrm(churn_data3, aes(col = churned, fill = churned), bg_dia  = "grey30") +
         lotri(geom_point(alpha = 0.1)) +
         lotri(geom_smooth(se=F, method = "loess")) +
-        utri_funtext(fun = corfun, size = 6) +
-        dia_names(y_pos = 0.15, size = 3) +
+        utri_funtext(fun = corfun, size = 4) +
+        dia_names(y_pos = 0.15, size = 2) +
         dia_density(lower = 0.3, fill = "grey60", color = 1) +
         theme_dark() +
         scale_color_viridis_d() +
