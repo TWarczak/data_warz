@@ -1132,7 +1132,7 @@ Define S3 location of data sets and tuning job name.
     ## 3         Completed             0.99445 2021-08-06 05:49:25 2021-08-06 05:50:55                         90
     
 
-Plot a time series chart that shows how AUC developed over 100 training
+Plot time series chart to show how AUC developed over 100 training
 jobs, tuned by the Bayesian optimizer.
 
     ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
@@ -1441,6 +1441,6 @@ with `{themis}` to balance the data, remove low-performing features,
 and/or tune additional hyperparameters. There should be room to improve
 model performance.
 
-(Delete the endpoint so you're not billed more $$$)
+(Delete the endpoint so you're not billed more $$$)  
 
     session$delete_endpoint(endpoint_name)
