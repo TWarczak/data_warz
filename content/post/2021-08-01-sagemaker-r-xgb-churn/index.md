@@ -1441,6 +1441,6 @@ with `{themis}` to balance the data, remove low-performing features,
 and/or tune additional hyperparameters. There should be room to improve
 model performance.
 
-(Delete the endpoint so your not billed more $$$)
+(Delete the endpoint so your're not billed more $$$)
 
     session$delete_endpoint(endpoint_name)
