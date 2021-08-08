@@ -16,7 +16,7 @@ organizations:
   url:
 
 # Short bio (displayed in user profile at end of posts)
-bio: Doubling down with R for a career in data science. Relocating to Seattle.
+bio: Doubling down with R for a career in data science. Relocating to Seattle, New York, or other major US city.
 
 # Interests to show in About widget
 interests:
