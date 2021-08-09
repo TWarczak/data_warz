@@ -51,7 +51,7 @@ advanced:
 
 # Todd Warczak PhD
 ## My Info {.heading .hide}
-White River Junction, VT (Relocating to Seattle, WA)\
+White River Junction, VT (Relocating to Seattle, NY, or other major US city)\
 206-999-6478\
 twarczak@gmail.com\
 [github.com/TWarczak](https://github.com/TWarczak)\
