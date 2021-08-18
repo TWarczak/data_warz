@@ -10,6 +10,7 @@ This blog was built to document my dive into data science, to showcase some side
 <!-- toc -->
 * **2021**
   - 2021/05 [📈️ Forecasting Daily Sales with Modeltime](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-05-26-forecasting-daily-sales-w-modeltime)
+  - 2021/08 [Predicting Bank Customer Churn using AWS SageMaker and XGBoost in Local RStudio](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-08-01-sagemaker-r-xgb-churn)
 <!-- tocstop -->
 
 </details>
