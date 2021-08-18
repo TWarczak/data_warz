@@ -1,0 +1,704 @@
+---
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r library, echo=TRUE}
+library(tidymodels)
+library(tidyverse)
+library(corrmorant)    # correlation matrix
+library(patchwork)     # multiple plots to 1 plot
+library(reticulate)    # calling the SageMaker Python SDK from R
+library(pROC)          # ROC curves
+library(viridis)       # color palletes
+library(caret)         # confusion matrix
+library()
+```
+
+```{r chunk3, message=FALSE, warning=FALSE}
+  house_data <- read_csv("~/Documents/R/data_science_projects/SLICED/s01e11_house_price/train.csv")
+
+holdout <- read_csv("~/Documents/R/data_science_projects/SLICED/s01e11_house_price/test.csv")
+```
+
+Data dictionary
+
+uid: A unique identifier for the Zillow property.
+
+[Target]{.ul}
+
+priceRange: The most recent available price at time of data acquisition, binned into price ranges.
+
+[Numeric Features]{.ul}
+
+latitude: Latitude of the listing.
+
+longitude: Longitude of the listing.
+
+garageSpaces: Number of garage spaces.
+
+numOfPatioAndPorchFeatures: The number of unique patio and/or porch features in the Zillow listing.
+
+lotSizeSqFt: The lot size of the property reported in Square Feet.
+This includes the living area.
+
+avgSchoolRating: The average school rating of all school types (i.e., Middle, High) in the Zillow listing.
+
+MedianStudentsPerTeacher: The median students per teacher for all schools in the Zillow listing.
+
+numOfBathrooms: The number of bathrooms in a property.
+
+numOfBedrooms: The number of bedrooms in a property.
+
+[Categorical Features]{.ul}
+
+city: The lowercase name of a city or town in or surrounding Austin, Texas.
+description: The description of the listing from Zillow.
+
+homeType: The home type (i.e., Single Family, Townhouse, Apartment).
+
+[Logical]{.ul}
+
+hasSpa: Boolean indicating if the home has a Spa.
+
+[Date]{.ul}
+
+yearBuilt: The year the property was built.
+
+```{r chunk4, cache=TRUE}
+glimpse(house_data)
+```
+
+```{r chunk5, cache=TRUE}
+skimr::skim(house_data)
+```
+
+```{r}
+table(house_data$priceRange)
+table(house_data$homeType)
+table(house_data$city)
+
+```
+
+```{r}
+house_data2 <- house_data %>% 
+  mutate(priceRange = fct_relevel(priceRange, c("0-250000",
+                                                "250000-350000",
+                                                "350000-450000",
+                                                "450000-650000",
+                                                "650000+"))) %>%
+  mutate(lotSizeSqFt = log1p(lotSizeSqFt)) %>% 
+  select(-c(city, description, uid))
+```
+
+```{r message=FALSE, warning=FALSE}
+
+corfun <- function(x, y)  {
+  round(cor(x, y, method = "pearson", use = "pairwise.complete.obs"), 2)
+}
+
+ggcorrm(house_data2, aes(col = priceRange, fill = priceRange), bg_dia  = "grey30") +
+    lotri(geom_point(alpha = 0.1)) +
+    lotri(geom_smooth(se=F, method = "loess")) +
+    utri_funtext(fun = corfun, size = 4) +
+    dia_names(y_pos = 0.15, size = 2) +
+    dia_density(lower = 0.3, fill = "grey60", color = 1) +
+    theme_dark() +
+    scale_color_viridis_d() +
+    scale_fill_viridis_d() +
+    labs(title = "Correlation Plot")
+```
+
+```{r chunk8, cache=TRUE}
+dense <- house_data2 %>%
+         select(-c(homeType)) %>%
+         pivot_longer(cols = c(latitude:numOfBedrooms), 
+                      names_to = "feature", 
+                      values_to = "value")
+
+ggplot(dense, aes(value, fill = priceRange)) +
+  geom_density(alpha = .5) +
+  facet_wrap(~ feature, scales = "free") +
+  labs(title = "Numeric features impacting priceRange?")
+```
+
+```{}
+```
+
+```{}
+```
+
+```{}
+```
+
+```{}
+```
+
+```{r}
+use_condaenv("sagemaker-r", required = TRUE)
+sagemaker <- import("sagemaker")
+session <- sagemaker$Session()
+```
+
+```{r}
+bucket <- "twarczak-sagemaker5"
+project <- "house"    # keep short. 32 character max job_name
+data_path <- paste0("s3://", bucket, "/", project, "/", "data")
+models_path <- paste0("s3://", bucket, "/", project, "/", "models")
+```
+
+### Data splitting
+
+```{r}
+# Make 70/15/15 Train/Validate/Test split
+set.seed(333)
+splits  <- initial_split(house_data, prop = 0.70)
+
+train <- training(splits)
+other  <- testing(splits)
+
+splits2 <- initial_split(other, prop = 0.50)
+validation <- training(splits2)
+test <- testing(splits2)
+
+print(splits)
+print(splits2)
+```
+
+### Preprocessing the data
+
+```{r}
+glimpse(house_data)
+house_rec <- recipe(priceRange ~ ., data = train) %>% 
+             step_rm(uid, description) %>% 
+             step_dummy(all_nominal_predictors(), one_hot = TRUE) %>%
+             step_mutate(hasSpa = as.numeric(hasSpa)) %>% 
+             prep()
+
+house_training <- house_rec %>% 
+                  juice() %>% 
+                  select(priceRange, everything()) # just to put attrition_flag as 1st column
+
+house_validation <- bake(house_rec, new_data = validation) %>% 
+                    select(priceRange, everything()) # just to put attrition_flag as 1st column
+
+house_test <- bake(house_rec, new_data = test) %>% 
+              select(priceRange, everything()) # just to put attrition_flag as 1st column
+
+id_holdout <- holdout %>% select(uid) 
+house_holdout <- bake(house_rec, new_data = holdout)
+```
+
+```{r chunk17, message=FALSE, warning=FALSE, cache=TRUE}
+num_class = length(levels(species))
+params = list(
+  booster="gbtree",
+  eta=0.001,
+  max_depth=5,
+  gamma=3,
+  subsample=0.75,
+  colsample_bytree=1,
+  objective="multi:softprob",
+  eval_metric="mlogloss",
+  num_class=num_class
+)
+
+
+bst <- xgboost::xgboost(data = data.matrix(subset(house_training, select = -priceRange)), 
+                        label = house_training$priceRange, 
+                        max_depth = 3, 
+                        eta = 0.1, 
+                        nthread = 2, 
+                        nrounds = 100, 
+                        objective = "multi:softprob", 
+                        verbose = FALSE)
+
+imp_bst <- xgb.importance(model = bst)
+xgb.ggplot.importance(imp_bst)
+```
+
+```{r chunk17.5, include=FALSE}
+vip::vip(bst, geom = 'point', num_features = 15)
+```
+
+```{r chunk18, message=FALSE, eval=FALSE}
+
+dir.create("../2021-08-01-sagemaker-r-xgb-churn/data") # local
+
+write_csv(churn_training, 
+          "../2021-08-01-sagemaker-r-xgb-churn/data/churn_training.csv", 
+          col_names = FALSE)
+write_csv(churn_validation, 
+          "../2021-08-01-sagemaker-r-xgb-churn/data/churn_validation.csv", 
+          col_names = FALSE)
+write_csv(churn_test %>% select(-attrition_flag), 
+          "../2021-08-01-sagemaker-r-xgb-churn/data/churn_test.csv", 
+          col_names = FALSE)
+write_csv(churn_test, 
+          "../2021-08-01-sagemaker-r-xgb-churn/data/churn_test_2.csv", 
+          col_names = TRUE) # Need this later to use with results
+
+
+write_csv(churn_holdout, 
+          "../2021-08-01-sagemaker-r-xgb-churn/data/churn_holdout.csv", 
+          col_names = FALSE) 
+write_csv(id_holdout, 
+          "../2021-08-01-sagemaker-r-xgb-churn/data/churn_holdout_id.csv",
+          col_names = FALSE) # Need this later to use with holdout results
+```
+
+```{r chunk19, cache=TRUE, eval=FALSE}
+s3_uploader <- sagemaker$s3$S3Uploader()
+
+s3_train <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/data/churn_training.csv", 
+                               desired_s3_uri = data_path)
+
+s3_validation <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/data/churn_validation.csv",
+                                    desired_s3_uri = data_path)
+
+s3_test <- s3_uploader$upload(local_path = "../2021-08-01-sagemaker-r-xgb-churn/data/churn_test.csv", 
+                              desired_s3_uri = data_path)
+```
+
+## 🏗 Train XGBoost model {\#build}
+
+### Step 1 - Create an Estimator object
+
+```{r chunk20, cache=TRUE, eval=FALSE}
+region <- session$boto_region_name
+
+container <- sagemaker$image_uris$retrieve(framework = "xgboost", 
+                                           region    = region, 
+                                           version   = "1.3-1" )
+
+role_arn <- Sys.getenv("SAGEMAKER_ROLE_ARN")
+
+xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
+                                               role               = role_arn,
+                                               instance_count     = 1L,
+                                               instance_type      = "ml.m5.4xlarge",  
+                                               volume_size        = 10L, 
+                                               max_run            = 300L,
+                                               output_path        = models_path,
+                                               sagemaker_session  = session,
+                                               use_spot_instances = TRUE,
+                                               max_wait           = 300L )
+```
+
+### Step 2 - Set static hyperparameters
+
+Use AUC as metric
+
+```{r chunk21, cache=TRUE, eval=FALSE}
+xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
+                                  eval_metric      = "auc",
+                                  max_depth        = 5L, 
+                                  eta              = 0.1,
+                                  num_round        = 100L,
+                                  colsample_bytree = 0.4,
+                                  alpha            = 10L,
+                                  min_child_weight = 1.1,
+                                  subsample        = 0.7)
+```
+
+### Step 3 - Define S3 location of data sets and training job name
+
+```{r chunk22, cache=TRUE, eval=FALSE}
+# Create training job name based project organization principles
+algo <- "xgb"    # keep short. 32 character max job_name
+timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S") # timestamp
+job_name_x <- paste(project, algo, timestamp, sep = "-")
+s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
+                                                 content_type = 'csv')
+s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
+                                                 content_type = 'csv')
+input_data <- list('train'      = s3_train_input,
+                   'validation' = s3_valid_input)
+```
+
+### Step 4 - Start training job
+
+```{r chunk23, cache=TRUE, eval=FALSE}
+xgb_estimator$fit(inputs = input_data,
+                  job_name = job_name_x,
+                  wait = FALSE)  # If TRUE, call will wait until job completes
+```
+
+```{r chunk24, cache=TRUE}
+session$describe_training_job(job_name_x)[["TrainingJobStatus"]]
+```
+
+### Step 5 - Evaluate training results
+
+```{r chunk25, cache=TRUE, eval=FALSE}
+training_job_stats <- session$describe_training_job(job_name = job_name_x)
+final_metrics_1 <-  map_df(training_job_stats$FinalMetricDataList, 
+                           ~tibble(metric_name = .x[["MetricName"]],
+                                   value = .x[["Value"]]))
+```
+
+```{r chunk25.2, cache=TRUE}
+final_metrics_1
+```
+
+### Step 6 - Fit model on test data
+
+```{r chunk26, cache=TRUE, eval=FALSE}
+predictions_path_1 <- paste0(models_path, "/", job_name_x, "/predictions") 
+
+xgb_batch_predictor_1 <- xgb_estimator$transformer(instance_count     = 1L, 
+                                                   instance_type      = "ml.m5.4xlarge", 
+                                                   strategy           = "MultiRecord",
+                                                   assemble_with      = "Line",
+                                                   output_path        = predictions_path_1 )
+```
+
+```{r chunk27, cache=TRUE, eval=FALSE}
+xgb_batch_predictor_1$transform(data         = s3_test, 
+                                content_type = 'text/csv',
+                                split_type   = "Line",
+                                job_name     = job_name_x,
+                                wait         = FALSE) # If TRUE, call waits until job completes
+```
+
+```{r chunk28, cache=TRUE}
+session$describe_transform_job(job_name_x)[["TransformJobStatus"]]
+```
+
+### Step 7 - Download & evaluate predictions
+
+```{r chunk29, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
+s3_downloader <- sagemaker$s3$S3Downloader()
+s3_test_predictions_path_1 <- s3_downloader$list(predictions_path_1)
+ 
+dir.create("./predictions")
+s3_downloader$download(s3_test_predictions_path_1, "./predictions")
+ 
+test_predictions_1 <- read_csv("./predictions/churn_test.csv.out",
+                               col_names = FALSE) %>% 
+                      pull(X1)
+
+test_results_1 <- tibble(truth       = churn_test$attrition_flag,
+                         predictions = test_predictions_1 )
+```
+
+```{r chunk29.2, cache=TRUE}
+head(test_results_1)
+```
+
+```{r chunk30, message=FALSE, warning=FALSE, cache=TRUE}
+roc_obj_1 <- pROC::roc(test_results_1$truth,
+                       test_results_1$predictions,
+                       plot        = TRUE,         
+                       grid        = TRUE,
+                       print.auc   = TRUE,
+                       legacy.axes = TRUE, 
+                       main        = "ROC curve for XGBoost classification",
+                       show.thres  = TRUE,
+                       col         = "red2" )
+```
+
+AUC: 0.989
+
+```{r chunk31, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
+conf_matrix_1 <- caret::confusionMatrix(factor(ifelse(test_results_1$predictions >= 0.5, 1, 0),
+                                                levels = c("0", "1"), 
+                                                labels = c("retained", "churned")),
+                                         factor(test_results_1$truth, 
+                                                levels = c(0, 1), 
+                                                labels = c("retained", "churned")),
+                                         positive = "churned")
+```
+
+```{r chunk31.2, cache=TRUE}
+conf_matrix_1
+```
+
+### Step 8 - Set hyperparameters
+
+**Static**
+
+```{r chunk32, cache=TRUE, eval=FALSE}
+xgb_estimator$set_hyperparameters(objective        = "binary:logistic",
+                                  min_child_weight = 1 )
+```
+
+**Tunable**
+
+```{r chunk33, cache=TRUE, eval=FALSE}
+hyperp_ranges <- list(num_round = sagemaker$tuner$IntegerParameter(50L, 500L),
+                      max_depth = sagemaker$tuner$IntegerParameter(2L, 15L),
+                      eta =sagemaker$tuner$ContinuousParameter(0.01,0.4,"Logarithmic"),
+                      colsample_bytree = sagemaker$tuner$ContinuousParameter(0.3,0.8),
+                      alpha = sagemaker$tuner$IntegerParameter(1L, 15L))
+```
+
+```{r chunk34, cache=TRUE, eval=FALSE}
+tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator,
+                                             objective_metric_name = "validation:auc",
+                                             objective_type        = "Maximize",
+                                             hyperparameter_ranges = hyperp_ranges, 
+                                             strategy              = "Bayesian",
+                                             max_jobs              = 100L,
+                                             max_parallel_jobs     = 3L )
+```
+
+```{r chunk35, cache=TRUE, eval=FALSE}
+algo <- "xgb"
+timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
+job_name_y <- paste(project, algo, timestamp, sep = "-")
+s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
+                                                 content_type = 'csv')
+s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
+                                                 content_type = 'csv')
+input_data <- list('train'      = s3_train_input,
+                   'validation' = s3_valid_input)
+```
+
+### Step 9 - Start tuning job
+
+```{r chunk36, cache=TRUE, eval=FALSE}
+tuner$fit(inputs   = input_data, 
+          job_name = job_name_y,
+          wait     = FALSE ) # If TRUE, call will wait until job completes
+```
+
+```{r chunk37, cache=TRUE}
+session$describe_tuning_job(job_name_y)[["HyperParameterTuningJobStatus"]]
+```
+
+### Step 10 - Evaluate tuning job results
+
+```{r chunk38, cache=TRUE, eval=FALSE}
+tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics(job_name_y)
+tuning_results_df <- tuning_job_results$dataframe()
+```
+
+```{r chunk38.2, cache=TRUE, paged.print=FALSE}
+head(tuning_results_df, n = 3)
+```
+
+```{r chunk39, fig.align='center', message=FALSE, warning=FALSE, cache=TRUE}
+ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
+  geom_point() +
+  xlab("Time") +
+  ylab(tuning_job_results$description()$TrainingJobDefinition$StaticHyperParameters$`_tuning_objective_metric`) +
+  ggtitle("Hyperparameter tuning AUC",  
+          "Progression over the period of all 100 training jobs") +
+  theme_minimal()
+```
+
+```{r chunk40, fig.align='center', cache=TRUE}
+ggplot(tuning_results_df, aes(num_round, eta)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_viridis("AUC", option = "H") +
+  ggtitle("Hyperparameter tuning AUC", 
+          "Using a Bayesian strategy") +
+  theme_dark()
+```
+
+```{r chunk41, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
+
+best_tuned_model <- tuning_results_df %>%
+                    #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
+                    arrange(desc(FinalObjectiveValue)) %>% 
+                    head(n=1) %>% pull(TrainingJobName)
+
+#best_tuned_model
+training_job_stats <- session$describe_training_job(job_name = best_tuned_model)
+
+final_metrics_2 <-  map_df(training_job_stats$FinalMetricDataList, 
+                           ~tibble(metric_name = .x[["MetricName"]],
+                                   value       = .x[["Value"]]))
+```
+
+```{r chunk41.2, cache=TRUE}
+final_metrics_2
+```
+
+### Step 11 - Create transformer object
+
+```{r chunk42, cache=TRUE, eval=FALSE}
+predictions_path_2 <- paste0(models_path, "/", best_tuned_model, "/predictions")
+
+session$create_model_from_job(best_tuned_model)
+
+xgb_batch_predictor_2 <- sagemaker$transformer$Transformer(model_name     = best_tuned_model,
+                                                           instance_count = 1L, 
+                                                           instance_type  = "ml.m5.4xlarge",   
+                                                           strategy       = "MultiRecord",  
+                                                           assemble_with  = "Line",
+                                                           output_path    = predictions_path_2)
+```
+
+```{r chunk42.2, cache=TRUE}
+best_tuned_model
+```
+
+### Step 12 - Start batch prediction job
+
+```{r chunk43, cache=TRUE, eval=FALSE}
+xgb_batch_predictor_2$transform(data         = s3_test, 
+                                content_type = 'text/csv',
+                                split_type   = "Line",
+                                job_name     = best_tuned_model,
+                                wait         = FALSE) # If TRUE, call will wait until job completes
+
+```
+
+```{r chunk44, cache=TRUE}
+session$describe_transform_job(best_tuned_model)[["TransformJobStatus"]]
+```
+
+### Step 13 - Download test set predictions
+
+```{r chunk45, cache=TRUE, eval=FALSE}
+s3_downloader <- sagemaker$s3$S3Downloader()
+
+s3_test_predictions_path_2 <- s3_downloader$list(predictions_path_2)
+ 
+dir.create("./predictions")
+
+s3_downloader$download(s3_test_predictions_path_2, "./predictions")
+ 
+test_predictions_2 <- read_csv("./predictions/churn_test.csv.out",
+                               col_names = FALSE) %>% 
+                      pull(X1)
+
+churn_test <- read_csv("./data/churn_test_2.csv")
+
+test_results_2 <- tibble(truth       = churn_test$attrition_flag,
+                         predictions = test_predictions_2)
+```
+
+```{r chunk45.2, cache=TRUE}
+head(test_results_2)
+```
+
+### Step 14 - Evaluate test set predictions
+
+```{r chunk46, message=FALSE, warning=FALSE, cache=TRUE}
+roc_obj_2 <- roc(test_results_2$truth, 
+                 test_results_2$predictions,
+                 plot        = TRUE,         
+                 grid        = TRUE,
+                 print.auc   = TRUE,
+                 legacy.axes = TRUE, 
+                 main        = "ROC curve for XGBoost classification using the best model",
+                 show.thres  = TRUE,
+                 col         = "red2" )
+```
+
+```{r chunk47, cache=TRUE, eval=FALSE}
+conf_matrix_2 <- confusionMatrix(factor(ifelse(test_results_2$predictions >= 0.5, 1, 0),
+                                        levels = c("0", "1"), 
+                                        labels = c("retained", "churned")),
+                                 factor(test_results_2$truth, 
+                                        levels = c(0, 1), 
+                                        labels = c("retained", "churned")),           
+                                 positive = "churned")
+```
+
+```{r chunk47.2, cache=TRUE}
+conf_matrix_2
+```
+
+```{r chunk48, eval=FALSE, cache=FALSE, include=FALSE}
+test_results_pred <- test_results_2 %>% 
+                     mutate(pred = factor(ifelse(predictions >= 0.5, 1, 0), 
+                                          levels = c("0", "1")))
+
+gmodels::CrossTable(x          = test_results_pred$pred, 
+                    y          = test_results_pred$truth,
+                    prop.chisq = FALSE, 
+                    prop.r     = FALSE, 
+                    prop.c     = FALSE, 
+                    prop.t     = FALSE,
+                    dnn        = c('predicted churn', 'actual churn'))
+```
+
+```{r chunk49, cache=TRUE, eval=FALSE}
+boto_client <- session$boto_session$client("sagemaker")
+churn_model <- boto_client$list_models()[["Models"]] %>% 
+  map_chr("ModelName") %>% 
+  .[[1]]
+```
+
+```{r chunk49.2, cache=TRUE}
+churn_model
+```
+
+### Step 15 - Create endpoint configuration
+
+```{r chunk50, results='hide', cache=TRUE, eval=FALSE}
+config_name <- paste0(churn_model, "-config")
+session$create_endpoint_config(name = config_name,
+                               model_name =  churn_model, 
+                               initial_instance_count = 1L, 
+                               instance_type = "ml.m5.4xlarge")
+```
+
+### Step 16 - Create endpoint
+
+```{r chunk51, results='hide', cache=TRUE, eval=FALSE}
+endpoint_name <- "churn-endpoint"
+session$create_endpoint(endpoint_name = endpoint_name, 
+                        config_name = config_name,
+                        wait = FALSE)
+```
+
+```{r chunk52, cache=TRUE}
+boto_client$describe_endpoint(EndpointName = endpoint_name)[["EndpointStatus"]]
+```
+
+### Step 17 - Make real-time predictions against the endpoint (not batch)
+
+```{r chunk53, cache=TRUE, eval=FALSE}
+csv_serializer <- sagemaker$serializers$CSVSerializer()
+csv_deserializer <- sagemaker$deserializers$CSVDeserializer()
+churn_predictor <- sagemaker$predictor$Predictor(endpoint_name     = endpoint_name, 
+                                                 sagemaker_session = session, 
+                                                 serializer        = csv_serializer,
+                                                 deserializer      = csv_deserializer)
+```
+
+```{r chunk54, message=FALSE, cache=TRUE, eval=FALSE}
+test_set <- read_csv("./data/churn_test.csv", 
+                     col_names = FALSE, 
+                     n_max     = 5) %>% 
+            as.matrix()
+real_time_predictions_1 <- churn_predictor$predict(data = test_set) %>% 
+                           .[[1]] %>% 
+                           as.numeric()
+```
+
+```{r chunk55, message=FALSE, cache=TRUE, eval=FALSE}
+batch_predictions <- read_csv("./predictions/churn_test.csv.out", 
+                              col_names = FALSE, n_max = 5) %>% 
+                     .[[1]]
+```
+
+```{r chunk55.2, cache=TRUE}
+data.frame(real_time_predictions_1, batch_predictions)
+```
+
+```{r chunk56, message=FALSE, cache=TRUE, eval=FALSE}
+holdout_set <- read_csv("./data/churn_holdout.csv", 
+                        col_names = FALSE) %>% 
+               as.matrix()
+real_time_predictions_2 <- churn_predictor$predict(data = holdout_set) %>% 
+                           .[[1]] %>% 
+                           as.numeric()
+```
+
+```{r chunk57, message=FALSE, warning=FALSE, cache=TRUE, eval=FALSE}
+churn_holdout_id <- read_csv("data/churn_holdout_id.csv", col_names = FALSE)
+submission <- data.frame(churn_holdout_id, real_time_predictions_2) %>% 
+              rename(id = X1, attrition_flag = real_time_predictions_2)
+write.csv(submission, "sliced_s01_e07_submission.csv", row.names = FALSE)
+```
+
+```{r chunk58, cache=TRUE}
+session$delete_endpoint(endpoint_name)
+```
