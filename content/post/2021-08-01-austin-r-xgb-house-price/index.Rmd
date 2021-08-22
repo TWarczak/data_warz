@@ -71,21 +71,14 @@ names(holdout) # lacks priceRange
 table(train_raw$priceRange)
 ```
 
-You can watch [this week's full episode of
-SLICED](https://www.twitch.tv/videos/1114553508) to see lots of exploratory data
-analysis and visualization of this dataset, but let's just make a few data
-visualization for context in this blog post.
+Are Austin house prices clustered by neighborhoods? Do prices change near highways, airports, etc? Downtown vs. suburbs? 
 
-How is price distributed across Austin?
+We can use the `{leaflet}` package to build interactive maps overlayed with our data. Zoom to dive deeper into individual neighborhoods.
 
-```{r fig.height=4, fig.width=4, warning=FALSE, message=FALSE}
-qmplot(longitude, latitude, data = train_raw, 
-       color = priceRange, darken = .4, alpha = I(.6))
-```
-
-```{r fig.height=8, fig.width=8}
+```{r fig.height=10, fig.width=10}
 q <- train_raw %>%
      mutate(priceRange_bin = parse_number(priceRange))
+
 #table(q$priceRange)
 #scico::scico_palette_show(palettes = scico_palette_names())
 
@@ -109,13 +102,10 @@ m <- leaflet(q) %>%
 m
 ```
 
-Let's look at this distribution and compare it to some other variables available in
-the dataset. We can create a little plotting function [using
-`{{}}`](https://dplyr.tidyverse.org/articles/programming.html#indirection) to quickly
-iterate through, and put them together with
-[patchwork](https://patchwork.data-imaginist.com/).
+I want to see multiple features distributed on a similar map. Let's build hex plots for the numeric predictors and use `{patchwork}` to make one nice plot.   
 
-```{r, fig.width=10, fig.height=14}
+```{r fig.width=10, fig.height=14}
+
 plot_hex <- function(var, title) {
   q %>%
     ggplot(aes(longitude, latitude, z = {{var}})) +
@@ -125,26 +115,26 @@ plot_hex <- function(var, title) {
     ggdark::dark_theme_minimal()  
 }
 
-# names(q)
-
-(plot_hex(priceRange_bin,"Price") + plot_hex(avgSchoolRating, "School rating")) /
-(plot_hex(yearBuilt,"Year built") + plot_hex(log(lotSizeSqFt),"Lot size (log)"))/
-(plot_hex(garageSpaces,"Garages") + plot_hex(MedianStudentsPerTeacher, "Median Student/Teacher")) / 
+(plot_hex(priceRange_bin,"Price")      + plot_hex(avgSchoolRating, "School Rating")) /
+(plot_hex(yearBuilt,"Year Built")      + plot_hex(log(lotSizeSqFt),"Lot size (log)"))/
+(plot_hex(garageSpaces,"Garages")      + plot_hex(MedianStudentsPerTeacher, "Median Student/Teacher")) / 
 (plot_hex(numOfBathrooms, "Bathrooms") + plot_hex(numOfBedrooms,"Bedrooms")) 
 ```
 
-```{r}
-plot_hex(priceRange_bin,"Price by city") +
+I'm going to drop `city` and `hasSpa` for being imballanced. I don't trust humans to tally `numOfPatioAndPorchFeatures` consistently, so let's drop that too.  
+
+```{r fig.width=10, fig.height=8}
+drop1 <- plot_hex(priceRange_bin,"Price by city") +
   facet_wrap(~city)
 
-plot_hex(priceRange_bin,"Price by hasSpa") +
+drop2 <- plot_hex(numOfPatioAndPorchFeatures, "# Patio Features")
+
+drop3 <- plot_hex(priceRange_bin,"Price by hasSpa") +
   facet_wrap(~hasSpa)
 
-plot_hex(numOfPatioAndPorchFeatures, "# Patio Features")
+(drop1 + drop2) / (drop3 + plot_spacer())
 ```
-
-Notice the east/west gradients as well as the radial changes. I went to grad school
-in Austin and this all look very familiar to me!
+I always like making density plots of numeric features for classification predictions. Just another way to see if any category stands out within a feature.  
 
 ```{r fig.width=10, fig.height=10}
 dense <- q %>%
@@ -164,44 +154,37 @@ ggplot(dense, aes(value, fill = priceRange)) +
         legend.background = element_rect(fill = "black", color = "white"))
 ```
 
-## Finding words related to price
+Between the maps, hex-plots and density plots, it seems `latitude`, `longitude`, `avgSchoolRating`, and `MedianStudentsPerTeacher` will be good predictors of `priceRange`.  
 
-The `description` variable contains text from each real estate listing. We could try
-to use the text features directly in modeling, [as described in our
-book](https://smltar.com/), but I've found that often isn't great for boosted tree
-models (which tend to be what works best overall in an environment like SLICED).
-Let's walk through another option which may work better in some situations, which is
-to use some separate analysis to identify important words and then create dummy
-variables indicating whether any given listing has those words.
+## NLP - Can we find important words in `description` to engineer some features?
 
-Let's start by tidying the `description` text.
+Let's borrow some tricks from [Julia Silge](https://juliasilge.com), the OG of text-mining in R, to identify important words and then add dummy variables for important words found in an observations `description`. 
 
 ```{r}
-austin_tidy <- 
+austin_text <- 
   train_raw %>%
-  mutate(priceRange = parse_number(priceRange) + 100000) %>%
-  unnest_tokens(word, description) %>%
-  anti_join(get_stopwords()) # remove stop words
+  mutate(priceRange = parse_number(priceRange) + 100000) %>% # make bin categories numeric so we can run glm
+  unnest_tokens(word, description) %>% # Splits column into tokens, flattening table into one-token-per-row.
+  anti_join(get_stopwords()) # Removes stop words
 
-austin_tidy %>%
+austin_text %>%
   count(word, sort = TRUE)
 ```
 
-Next, let's compute word frequencies per price range for the top 100 words.
+Find word frequencies per `priceRange` bin for the top 100 words.
 
 ```{r}
-#dim(q)
 top_words <- 
-  austin_tidy %>%
+  austin_text %>%
   count(word, sort = TRUE) %>%
   filter(!word %in% as.character(1:5)) %>% # removing numbers
-  slice_max(n, n = 100) %>% 
+  slice_max(n, n = 100) %>% # 100 most frequent words
   pull(word)
 
 word_freqs <- 
-  austin_tidy %>%
+  austin_text %>%
   count(word, priceRange) %>%
-  complete(word, priceRange, fill = list(n = 0)) %>%
+  complete(word, priceRange, fill = list(n = 0)) %>%   # 0 instead of NA
   group_by(priceRange) %>%
   mutate(price_total = sum(n),
          proportion = n / price_total) %>%
@@ -211,19 +194,18 @@ word_freqs <-
 word_freqs
 ```
 
-Now let's use modeling to find the words that are **increasing** with price and those
-that are **decreasing** with price.
+Build a glm that shows word frequency **increasing** across `priceRange` bins or **decreasing**
+across `priceRange` bins.
 
 ```{r}
 word_mods <-
   word_freqs %>%
   nest(data = c(priceRange, n, price_total, proportion)) %>%
-  mutate(model = map(data, ~ glm(cbind(n, price_total) ~ priceRange, ., 
-                                 family = "binomial")),
+  mutate(model = map(data, ~ glm(cbind(n, price_total) ~ priceRange, ., family = "binomial")),
          model = map(model, tidy)) %>%
   unnest(model) %>%
-  filter(term == "priceRange") %>%
-  mutate(p.value = p.adjust(p.value)) %>%
+  filter(term == "priceRange") %>% # want slope and not intercept
+  mutate(adj.pvalue = p.adjust(p.value)) %>%  # adjusting p-values for imbalanced words
   arrange(-estimate)
 
 word_mods
@@ -259,8 +241,7 @@ high <- word_freqs %>%
   scale_x_continuous(labels = scales::dollar) +
   scale_y_continuous(labels = scales::percent, limits = c(0, NA)) +
   labs(x = NULL, y = "% of word in home description at price",
-       title = "12 Expensive Words") +
-  ggdark::dark_theme_minimal() 
+       title = "12 Expensive Words")
 
 low <- word_freqs %>% 
   filter(word %in% lower_words) %>%
@@ -270,8 +251,7 @@ low <- word_freqs %>%
   scale_x_continuous(labels = scales::dollar) +
   scale_y_continuous(labels = scales::percent, limits = c(0, NA)) +
   labs(x = NULL, y = "% of word in home description at price",
-       title = "12 Cheap Words") +
-  ggdark::dark_theme_minimal() 
+       title = "12 Cheap Words") 
 
 high/low
 ```
