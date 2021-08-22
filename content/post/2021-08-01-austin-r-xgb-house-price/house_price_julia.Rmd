@@ -1,0 +1,1114 @@
+---
+title: "Multi-class Prediction of Austin housing prices with XGBoost and AWS SageMaker in R"
+author: Todd Warczak
+date: '2021-08-19'
+slug: XGB-Multi-Class
+categories:
+  - rstats
+  - AWS
+  - SageMaker
+  - XGBoost
+  - R
+  - SHAP
+  - Geospacial 
+tags:
+  - reticulate
+  - AWS
+  - SageMaker
+  - XGBoost
+  - multiclass
+  - SHAP
+  - R
+  - rstats
+  - NLP
+  - ggmaps
+  - Leaflet
+  - Geospacial
+subtitle: 'Interpretable XGBoost with SHAP'
+summary: "In this post I explore an Austin Housing dataset and predict binned housing price. EDA includes static and interactive geospacial feature maps and feature engineering using natural language processing (NLP). In my RStudio I utilize a conda environment to access SageMaker's XGBoost, S3, and EC2 for distributed computing. After model training/tuning/evaluation I run SHapley Additive exPlanations (SHAP) to understand what the XGBoost model considered important features and how it clustered similar observations. I run batch inference with the best performing model to predict the price of Austin houses in holdout data. I then submitted predictions to the Kaggle competition. Multiclass Log Loss was the evaluation algorithm and my submission scored ___, which would have placed __ in the live competition."
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: true
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE, 
+                      echo = TRUE, dpi = 300, cache.lazy = FALSE,
+                      tidy = "styler", fig.width = 8, fig.height = 5)
+library(scales)
+library(tidyverse)
+library(tidymodels)
+library(ggmap)
+library(leaflet)
+library(scico)
+library(patchwork)
+library(tidytext)
+library(paws)
+library(reticulate)    # calling the SageMaker Python SDK from R
+theme_set(ggdark::dark_theme_minimal())
+
+
+#library(finetune)
+```
+
+In this post I explore an Austin, TX real estate dataset and predict binned housing price. EDA includes static and interactive geospacial feature maps and feature engineering using natural language processing (NLP). In my RStudio I utilize a conda environment to access SageMaker's XGBoost, S3, and EC2 for distributed computing. After model training/tuning/evaluation I run SHapley Additive exPlanations (SHAP) to understand what the XGBoost model considered important features and how it clustered similar observations. I ran batch inference with the best performing model to predict the price of Austin houses in holdout data and then submitted predictions to the [Kaggle](https://www.kaggle.com/c/sliced-s01e11-semifinals/) competition. Multiclass Log Loss was the evaluation algorithm and my submission scored ___ (lower is better), which would have placed __ in the live competition.
+
+## EDA
+
+Our modeling goal is to predict  given features about the real
+estate listing. This is a multiclass classification challenge, where . The main data set
+provided is in a CSV file called `training.csv`.
+
+```{r}
+train_raw <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-austin-r-xgb-house-price/train.csv")
+
+holdout <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-austin-r-xgb-house-price/test.csv")
+names(train_raw)
+names(holdout) # lacks priceRange
+table(train_raw$priceRange)
+```
+
+You can watch [this week's full episode of
+SLICED](https://www.twitch.tv/videos/1114553508) to see lots of exploratory data
+analysis and visualization of this dataset, but let's just make a few data
+visualization for context in this blog post.
+
+How is price distributed across Austin?
+
+```{r fig.height=4, fig.width=4, warning=FALSE, message=FALSE}
+qmplot(longitude, latitude, data = train_raw, 
+       color = priceRange, darken = .4, alpha = I(.6))
+```
+
+```{r fig.height=8, fig.width=8}
+q <- train_raw %>%
+     mutate(priceRange_bin = parse_number(priceRange))
+#table(q$priceRange)
+#scico::scico_palette_show(palettes = scico_palette_names())
+
+pal <- colorNumeric(palette = scico(6, palette = 'buda'),
+                    domain = q$priceRange_bin)
+
+m <- leaflet(q) %>% 
+     addTiles() %>% 
+     addCircles(lng = ~longitude, lat = ~latitude, 
+                color = ~pal(priceRange_bin), opacity = 0.8) %>% 
+     setView(lng = -97.75, lat = 30.3, zoom = 12 ) %>% 
+     addProviderTiles("CartoDB.DarkMatterNoLabels")%>%
+     addProviderTiles("Stamen.TonerLines") %>%
+     addProviderTiles("Stamen.TonerLabels") %>% 
+     addLegend("bottomright", 
+               pal       = pal, 
+               values    = ~priceRange_bin,
+               title     = "Price", 
+               labFormat = labelFormat(prefix = "$"),
+               opacity   = 1)
+m
+```
+
+Let's look at this distribution and compare it to some other variables available in
+the dataset. We can create a little plotting function [using
+`{{}}`](https://dplyr.tidyverse.org/articles/programming.html#indirection) to quickly
+iterate through, and put them together with
+[patchwork](https://patchwork.data-imaginist.com/).
+
+```{r, fig.width=10, fig.height=14}
+plot_hex <- function(var, title) {
+  q %>%
+    ggplot(aes(longitude, latitude, z = {{var}})) +
+    stat_summary_hex(bins = 40) +
+    scico::scale_fill_scico(palette = 'imola') +
+    labs(fill = "Avg", title = title) +
+    ggdark::dark_theme_minimal()  
+}
+
+# names(q)
+
+(plot_hex(priceRange_bin,"Price") + plot_hex(avgSchoolRating, "School rating")) /
+(plot_hex(yearBuilt,"Year built") + plot_hex(log(lotSizeSqFt),"Lot size (log)"))/
+(plot_hex(garageSpaces,"Garages") + plot_hex(MedianStudentsPerTeacher, "Median Student/Teacher")) / 
+(plot_hex(numOfBathrooms, "Bathrooms") + plot_hex(numOfBedrooms,"Bedrooms")) 
+```
+
+```{r}
+plot_hex(priceRange_bin,"Price by city") +
+  facet_wrap(~city)
+
+plot_hex(priceRange_bin,"Price by hasSpa") +
+  facet_wrap(~hasSpa)
+
+plot_hex(numOfPatioAndPorchFeatures, "# Patio Features")
+```
+
+Notice the east/west gradients as well as the radial changes. I went to grad school
+in Austin and this all look very familiar to me!
+
+```{r fig.width=10, fig.height=10}
+dense <- q %>%
+         select(-c(uid, city, description, homeType, 
+                   hasSpa, priceRange_bin, yearBuilt)) %>%
+         pivot_longer(cols = c(garageSpaces, avgSchoolRating, MedianStudentsPerTeacher,
+                               numOfBathrooms, numOfBedrooms, longitude, latitude), 
+                      names_to = "feature", 
+                      values_to = "value")
+
+ggplot(dense, aes(value, fill = priceRange)) +
+  geom_density(alpha = .5) +
+  facet_wrap(~ feature, scales = "free") +
+  labs(title = "Numeric features impacting priceRange") +
+  ggdark::dark_theme_minimal() +
+  theme(legend.position = c(0.45, 0.2),
+        legend.background = element_rect(fill = "black", color = "white"))
+```
+
+## Finding words related to price
+
+The `description` variable contains text from each real estate listing. We could try
+to use the text features directly in modeling, [as described in our
+book](https://smltar.com/), but I've found that often isn't great for boosted tree
+models (which tend to be what works best overall in an environment like SLICED).
+Let's walk through another option which may work better in some situations, which is
+to use some separate analysis to identify important words and then create dummy
+variables indicating whether any given listing has those words.
+
+Let's start by tidying the `description` text.
+
+```{r}
+austin_tidy <- 
+  train_raw %>%
+  mutate(priceRange = parse_number(priceRange) + 100000) %>%
+  unnest_tokens(word, description) %>%
+  anti_join(get_stopwords()) # remove stop words
+
+austin_tidy %>%
+  count(word, sort = TRUE)
+```
+
+Next, let's compute word frequencies per price range for the top 100 words.
+
+```{r}
+#dim(q)
+top_words <- 
+  austin_tidy %>%
+  count(word, sort = TRUE) %>%
+  filter(!word %in% as.character(1:5)) %>% # removing numbers
+  slice_max(n, n = 100) %>% 
+  pull(word)
+
+word_freqs <- 
+  austin_tidy %>%
+  count(word, priceRange) %>%
+  complete(word, priceRange, fill = list(n = 0)) %>%
+  group_by(priceRange) %>%
+  mutate(price_total = sum(n),
+         proportion = n / price_total) %>%
+  ungroup() %>%
+  filter(word %in% top_words)
+
+word_freqs
+```
+
+Now let's use modeling to find the words that are **increasing** with price and those
+that are **decreasing** with price.
+
+```{r}
+word_mods <-
+  word_freqs %>%
+  nest(data = c(priceRange, n, price_total, proportion)) %>%
+  mutate(model = map(data, ~ glm(cbind(n, price_total) ~ priceRange, ., 
+                                 family = "binomial")),
+         model = map(model, tidy)) %>%
+  unnest(model) %>%
+  filter(term == "priceRange") %>%
+  mutate(p.value = p.adjust(p.value)) %>%
+  arrange(-estimate)
+
+word_mods
+```
+
+These are the words that we'd like to try to detect and use in feature engineering
+for our xgboost model, rather than using all the text tokens as features
+individually.
+
+```{r}
+higher_words <-
+  word_mods %>%
+  filter(p.value < 0.05) %>%
+  slice_max(estimate, n = 12) %>%
+  pull(word)
+
+lower_words <- 
+  word_mods %>%
+  filter(p.value < 0.05) %>%
+  slice_max(-estimate, n = 12) %>%
+  pull(word)
+```
+
+We can look at these changes with price directly. For example, these are the words
+most associated with price decrease.
+
+```{r, fig.width=12, fig.height=14}
+high <- word_freqs %>% 
+  filter(word %in% higher_words) %>%
+  ggplot(aes(priceRange, proportion, color = word)) +
+  geom_line(size = 2.5, alpha = 0.7, show.legend = FALSE) +
+  facet_wrap(vars(word), scales = "free") +
+  scale_x_continuous(labels = scales::dollar) +
+  scale_y_continuous(labels = scales::percent, limits = c(0, NA)) +
+  labs(x = NULL, y = "% of word in home description at price",
+       title = "12 Expensive Words") +
+  ggdark::dark_theme_minimal() 
+
+low <- word_freqs %>% 
+  filter(word %in% lower_words) %>%
+  ggplot(aes(priceRange, proportion, color = word)) +
+  geom_line(size = 2.5, alpha = 0.7, show.legend = FALSE) +
+  facet_wrap(vars(word), scales = "free") +
+  scale_x_continuous(labels = scales::dollar) +
+  scale_y_continuous(labels = scales::percent, limits = c(0, NA)) +
+  labs(x = NULL, y = "% of word in home description at price",
+       title = "12 Cheap Words") +
+  ggdark::dark_theme_minimal() 
+
+high/low
+```
+
+Cheaper houses are "great" but not expensive houses, and apparently you don't need to
+mention the location ("close", "minutes", "location") of more expensive houses.
+
+## Build a model
+
+Let's start our modeling by setting up our "data budget", as well as the metrics
+(this challenge was evaluate on multiclass log loss).
+
+```{r}
+train_raw$priceRange <- factor(recode(train_raw$priceRange,
+                                      "0-250000"      = "0", 
+                                      "250000-350000" = "1",
+                                      "350000-450000" = "2",
+                                      "450000-650000" = "3", 
+                                      "650000+"       = "4"), 
+                               levels = c("0", "1", "2", "3", "4"))
+
+head(train_raw$priceRange, n = 20)
+```
+
+
+```{r}
+# Make 75/12.5/12.5 Train/Validate/Test split
+set.seed(333)
+splits  <- initial_split(train_raw, prop = 0.75, strata = priceRange)
+
+train <- training(splits)
+other  <- testing(splits)
+
+splits2 <- initial_split(other, prop = 0.50, strata = priceRange)
+validation <- training(splits2)
+test <- testing(splits2)
+
+print(splits)
+print(splits2)
+```
+
+For feature engineering, let's use basically everything in the dataset (aside from
+`city`, which was not a very useful variable) and [create dummy or indicator
+variables using
+`step_regex()`](https://recipes.tidymodels.org/reference/step_regex.html). The idea
+here is that we will detect whether these words associated with low/high price are
+there and create a yes/no variable indicating their presence or absence.
+
+```{r}
+higher_words_6 <- word_mods %>%
+                   filter(p.value < 0.05) %>%
+                   slice_max(estimate, n = 6) %>%
+                   pull(word)
+
+lower_words_5 <- word_mods %>%
+                  filter(p.value < 0.05) %>%
+                  slice_max(-estimate, n = 5) %>%
+                  pull(word)
+
+higher_pat <- glue::glue_collapse(higher_words_6, sep = "|")
+lower_pat <- glue::glue_collapse(lower_words_5, sep = "|")
+
+rec_austin <-
+  recipe(priceRange ~ ., data = train) %>%
+  step_regex(description, pattern = higher_pat, result = "high_price_words") %>%
+  step_regex(description, pattern = lower_pat, result = "low_price_words") %>%
+  step_rm(c(uid, city, description, hasSpa, numOfPatioAndPorchFeatures)) %>%
+  step_novel(homeType) %>% 
+  # assign novel factor level if new data has homeType category unseen in train data
+  step_unknown(homeType) %>% 
+  # assign missing value to level "unknown"
+  step_other(homeType, threshold = 0.02) %>%
+  # low occuring values get pooled into "other" categoory
+  step_dummy(all_nominal_predictors()) %>%
+  #step_nzv(all_predictors()) %>% 
+  # removes highly sparse and unbalanced predictors
+  prep()
+```
+
+```{r}
+austin_training <- rec_austin %>% 
+                  juice() %>% 
+                  select(priceRange, everything()) # put priceRange as 1st column
+head(austin_training)
+#table(austin_training$priceRange)
+
+austin_validation <- bake(rec_austin, new_data = validation) %>% 
+                    select(priceRange, everything()) # put priceRange as 1st column
+
+#table(austin_validation$priceRange)
+
+austin_test <- bake(rec_austin, new_data = test) %>% 
+              select(priceRange, everything()) # put priceRange as 1st column
+
+#table(austin_test$priceRange)
+
+id_holdout <- holdout %>% select(uid) 
+austin_holdout <- bake(rec_austin, new_data = holdout)
+
+#table(austin_training$high_price_words)
+```
+
+Now let's create a tunable xgboost model specification, tuning a lot of the important
+model hyperparameters, and combine it with our feature engineering recipe in a
+`workflow()`. We can also create a custom `xgb_grid` to specify what parameters I
+want to try out, like not-too-small learning rate, avoiding tree stubs, etc. I chose
+this parameter grid to get reasonable performance in a reasonable amount of tuning
+time.
+
+```{r}
+
+# dir.create("../2021-08-01-austin-r-xgb-house-price/data") # local
+
+write_csv(austin_training, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_training.csv", 
+          col_names = FALSE)
+write_csv(austin_validation, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_validation.csv", 
+          col_names = FALSE)
+write_csv(austin_test %>% select(-priceRange), 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_test.csv", 
+          col_names = FALSE)
+write_csv(austin_test, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_test_2.csv", 
+          col_names = TRUE) # Need this later to use with results
+
+write_csv(austin_holdout, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout.csv", 
+          col_names = FALSE) 
+write_csv(id_holdout, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout_id.csv",
+          col_names = FALSE) # Need this later to use with holdout results
+```
+
+```{r chunk13}
+use_condaenv("sagemaker-r", required = TRUE)
+sagemaker <- import("sagemaker")
+session <- sagemaker$Session()
+```
+
+```{r}
+bucket <- "twarczak-sagemaker7"
+project <- "austin"    # keep short. 32 character max job_name
+data_path <- paste0("s3://", bucket, "/", project, "/", "data")
+models_path <- paste0("s3://", bucket, "/", project, "/", "models")
+```
+
+```{r chunk19, cache=TRUE}
+s3_uploader <- sagemaker$s3$S3Uploader()
+
+s3_train <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_training.csv", 
+                               desired_s3_uri = data_path)
+
+s3_validation <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_validation.csv",
+                                    desired_s3_uri = data_path)
+
+s3_test <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test.csv", 
+                              desired_s3_uri = data_path)
+```
+
+```{r chunk20}
+region <- session$boto_region_name
+container <- sagemaker$image_uris$retrieve(framework = "xgboost", 
+                                           region    = region, 
+                                           version   = "1.3-1" )
+
+role_arn <- Sys.getenv("SAGEMAKER_ROLE_ARN")
+
+xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
+                                               role               = role_arn,
+                                               instance_count     = 1L,
+                                               instance_type      = "ml.m4.16xlarge", 
+                                               volume_size        = 10L, 
+                                               output_path        = models_path,
+                                               sagemaker_session  = session,
+                                               use_spot_instances = TRUE,
+                                               max_run            = 1800L,
+                                               max_wait           = 3600L )
+                                              # keep at ml.m4.16xlarge
+```
+
+```{r chunk21}
+xgb_estimator$set_hyperparameters(objective        = "multi:softprob",
+                                  eval_metric      = "mlogloss",
+                                  num_class        = 5L, # necessary for multiclass
+                                  max_depth        = 5L, 
+                                  eta              = 0.1,
+                                  num_round        = 70L,
+                                  colsample_bytree = 0.4,
+                                  alpha            = 1L,
+                                  min_child_weight = 1.1,
+                                  subsample        = 0.7,
+                                  gamma            = 0.01)
+```
+
+```{r chunk22}
+# Create training job name based project organization principles
+algo <- "xgb"    # keep short. 32 character max job_name
+timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S") # timestamp
+job_name_1 <- paste(project, algo, timestamp, sep = "-")
+s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
+                                                 content_type = 'csv')
+s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
+                                                 content_type = 'csv')
+input_data <- list('train'      = s3_train_input,
+                   'validation' = s3_valid_input)
+```
+
+```{r chunk23}
+xgb_estimator$fit(inputs   = input_data,
+                  job_name = job_name_1,
+                  wait     = FALSE)
+```
+
+```{r chunk25}
+training_job_stats <- session$describe_training_job(job_name = job_name_1)
+final_metrics_1 <-  map_df(training_job_stats$FinalMetricDataList, 
+                           ~tibble(metric_name = .x[["MetricName"]],
+                                   value = .x[["Value"]]))
+```
+
+```{r chunk25.2}
+final_metrics_1
+```
+
+```{r chunk26}
+predictions_path_1 <- paste0(models_path, "/", job_name_1, "/predictions") 
+
+xgb_batch_predictor_1 <- xgb_estimator$transformer(instance_count     = 1L, 
+                                                   instance_type      = "ml.m4.16xlarge", 
+                                                   strategy           = "MultiRecord",
+                                                   assemble_with      = "Line",
+                                                   output_path        = predictions_path_1)
+```
+
+```{r chunk27}
+xgb_batch_predictor_1$transform(data         = s3_test, 
+                                content_type = 'text/csv',
+                                split_type   = "Line",
+                                job_name     = job_name_1,
+                                wait         = FALSE)
+```
+
+```{r chunk29, message=FALSE, warning=FALSE}
+
+s3_downloader <- sagemaker$s3$S3Downloader()
+s3_test_predictions_path_1 <- s3_downloader$list(predictions_path_1)
+ 
+dir.create("./predictions")
+s3_downloader$download(s3_test_predictions_path_1, "./predictions")
+ 
+
+test_predictions_1 <- read_csv("./predictions/austin_test.csv.out",
+                                col_names = FALSE  ) #%>% 
+                      # pull(X1)
+tp1 <- unnest(test_predictions_1)
+
+test_predictions_2 <- tp1 %>% 
+                      transmute("0-250000"      = X1,
+                                "250000-350000" = X2,
+                                "350000-450000" = X3,
+                                "450000-650000" = X4,
+                                "650000+"       = X5 )
+
+test_predictions_2$`0-250000` <- as.numeric(str_replace_all(test_predictions_2$`0-250000`,"\\[|\\]", ""))
+test_predictions_2$`650000+` <- as.numeric(str_replace_all(test_predictions_2$`650000+`,"\\[|\\]", "")) 
+
+test_results_1 <- austin_test %>% 
+  select(priceRange) %>% 
+  bind_cols(test_predictions_2) %>% 
+  rename(Truth = priceRange) %>% 
+  mutate(Truth = case_when(Truth == "0" ~ "0-250000", 
+                           Truth == "1" ~ "250000-350000",
+                           Truth == "2" ~ "350000-450000",
+                           Truth == "3" ~ "450000-650000", 
+                           Truth == "4" ~ "650000+"      ))
+```
+
+```{r chunk29.2}
+head(test_results_1)
+```
+
+```{r message=FALSE, warning=FALSE, fig.height=6, fig.width=8}
+test_results_1 <- test_results_1 %>%
+    mutate(pred_class = pmap_chr(across(`0-250000`:`650000+`),
+                        ~ names(c(...)[which.max(c(...))])))
+
+conf1 <- test_results_1 %>% 
+  conf_mat(Truth, pred_class) %>% 
+  autoplot(type = "heatmap") +
+  scale_fill_scico(begin = 0.2, end = 0.7, palette = "bamako") +  
+  labs(title = "Confusion Matrix - XGBoost multi-class BEFORE Tuning\n") +
+  scale_x_discrete(position = "top")
+conf1
+```
+
+
+```{r chunk30, message=FALSE, warning=FALSE, cache=TRUE, fig.width=10}
+roc1 <- test_results_1 %>% 
+  roc_curve(as.factor(Truth), `0-250000`:`650000+`) %>% 
+  ggplot(aes(1-specificity, sensitivity, color = .level)) +
+  geom_abline(lty = 2, color = "gray80", size = 1.5) +
+  geom_path(alpha = 0.7, size = 1.1) +
+  coord_equal() +
+  labs(color = "priceRange",
+       title = "ROC curves for XGBoost multi-class",
+       subtitle = "AUC = 0.8684319") +
+  theme(legend.position = c(0.8, 0.3),
+        legend.background = element_rect(fill = "black"))
+roc1
+```
+
+```{r}
+# res <- test_results_1 %>% roc_curve(as.factor(Truth), `0-250000`:`650000+`)
+# res
+```
+
+```{r chunk32}
+xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
+                                               role               = role_arn,
+                                               instance_count     = 1L,
+                                               instance_type      = "ml.m5.4xlarge", 
+                                               volume_size        = 10L, 
+                                               output_path        = models_path,
+                                               sagemaker_session  = session,
+                                               use_spot_instances = TRUE,
+                                               max_run            = 1800L,
+                                               max_wait           = 3600L )
+                                              # keep at ml.m4.16xlarge
+
+xgb_estimator$set_hyperparameters(objective        = "multi:softprob",
+                                  eval_metric      = "mlogloss",
+                                  num_class        = 5L,
+                                  alpha            = 1L ) 
+#max_depth 0 w/ tree_method "hist" & grow_policy "lossguide"
+                                 # tree_method      = "hist",
+                                 # grow_policy      = "lossguide",
+```
+**Tunable**
+```{r chunk33}
+hyperp_ranges <- list(num_round = sagemaker$tuner$IntegerParameter(500L, 800L),
+                      max_depth = sagemaker$tuner$IntegerParameter(5L, 8L),
+              eta              = sagemaker$tuner$ContinuousParameter(0.01,0.07),
+              colsample_bytree = sagemaker$tuner$ContinuousParameter(0.5, 0.75),
+              min_child_weight = sagemaker$tuner$ContinuousParameter(1.0, 7.0),
+              subsample        = sagemaker$tuner$ContinuousParameter(0.5, 0.9),
+              gamma            = sagemaker$tuner$ContinuousParameter(0.01, 0.1))
+```
+Create `HyperparameterTuner` object.
+```{r chunk34}
+tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator,
+                                             objective_metric_name = "validation:mlogloss",
+                                             objective_type        = "Minimize",
+                                             hyperparameter_ranges = hyperp_ranges, 
+                                             strategy              = "Bayesian",
+                                             max_jobs              = 150L,
+                                             max_parallel_jobs     = 4L)
+```
+Define S3 location of data sets and tuning job name.
+```{r chunk35}
+algo <- "xgb"
+timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
+job_name_x <- paste(project, algo, timestamp, sep = "-")
+s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
+                                                 content_type = 'csv')
+s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
+                                                 content_type = 'csv')
+input_data <- list('train'      = s3_train_input,
+                   'validation' = s3_valid_input)
+```
+### Step 9 - Start tuning job
+```{r chunk36}
+tuner$fit(inputs   = input_data, 
+          job_name = job_name_x,
+          wait     = FALSE )
+```
+### Step 10 - Evaluate tuning job results
+```{r chunk38}
+# find the jobs names in aws services: sagemaker, training, hyperparameter tuning jobs
+tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics("austin-xgb-2021-08-21-19-26-19")
+tuning_results_df <- tuning_job_results$dataframe()
+```
+
+```{r chunk38.2}
+tuning_results_df %>% arrange(FinalObjectiveValue) %>% select(FinalObjectiveValue, everything())
+```
+Plot a time series chart that shows how AUC developed over 100 training jobs, tuned
+by the Bayesian optimizer.
+```{r message=FALSE, warning=FALSE}
+tune_plot0 <-ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
+  geom_point() +
+  xlab("Time") +
+  ylab(tuning_job_results$description()$TrainingJobDefinition$StaticHyperParameters$`_tuning_objective_metric`) +
+  ggtitle("Hyperparameter tuning mLogloss",  
+          "Progression over the period of all 100 training jobs") 
+
+tune_plot1 <- ggplot(tuning_results_df, aes(num_round, max_depth)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+
+tune_plot2 <-ggplot(tuning_results_df, aes(eta, colsample_bytree)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+
+tune_plot3 <-ggplot(tuning_results_df, aes(min_child_weight, subsample)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+
+tune_plot4 <-ggplot(tuning_results_df, aes(gamma, eta)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+```
+
+```{r message=FALSE, warning=FALSE, fig.height=10, fig.width=12}
+(tune_plot0 + tune_plot1) / (tune_plot2 + tune_plot3) / (tune_plot4 + plot_spacer())
+```
+
+```{r chunk41, message=FALSE, warning=FALSE}
+best_5_tuned_models <- tuning_results_df %>%
+                    #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
+                    arrange(FinalObjectiveValue) %>% 
+                    head(n=5) 
+
+#unnest(best_10_tuned_models) %>% select(FinalObjectiveValue, everything())
+
+best_tuned_model <- tuning_results_df %>%
+                    #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
+                    arrange(FinalObjectiveValue) %>% 
+                    head(n=1) %>% pull(TrainingJobName)
+
+#best_tuned_model
+training_job_stats <- session$describe_training_job(job_name = best_tuned_model)
+
+final_metrics_2 <-  map_df(training_job_stats$FinalMetricDataList, 
+                           ~tibble(metric_name = .x[["MetricName"]],
+                                   value       = .x[["Value"]]))
+```
+
+```{r chunk41.2, cache=TRUE}
+final_metrics_2
+```
+
+```{r chunk42, eval=FALSE}
+predictions_path_2 <- paste0(models_path, "/", best_tuned_model, "/predictions")
+
+session$create_model_from_job(best_tuned_model)
+
+xgb_batch_predictor_2 <- sagemaker$transformer$Transformer(model_name     = best_tuned_model,
+                                                           instance_count = 1L, 
+                                                           instance_type  = "ml.m4.4xlarge", 
+                                                           strategy       = "MultiRecord",  
+                                                           assemble_with  = "Line",
+                                                           output_path    = predictions_path_2)
+```
+### Step 12 - Start batch prediction job
+
+```{r chunk43}
+xgb_batch_predictor_2$transform(data         = s3_test, 
+                                content_type = 'text/csv',
+                                split_type   = "Line",
+                                job_name     = "austin-xgb-2021-08-20-22-08-07-083-347756be",
+                                wait         = FALSE) 
+```
+
+
+```{r chunk45}
+s3_downloader <- sagemaker$s3$S3Downloader()
+
+s3_test_predictions_path_2 <- s3_downloader$list(predictions_path_2)
+ 
+#dir.create("./predictions")
+
+s3_downloader$download(s3_test_predictions_path_2, "./predictions")
+ 
+test_predictions_2 <- read_csv("./predictions/austin_test.csv.out",
+                               col_names = FALSE) #%>% pull(X1)
+
+tp2 <- unnest(test_predictions_2)
+
+test_predictions_3 <- tp2 %>%
+                      transmute("0-250000"      = X1,
+                                "250000-350000" = X2,
+                                "350000-450000" = X3,
+                                "450000-650000" = X4,
+                                "650000+"       = X5 )
+ 
+test_predictions_3$`0-250000` <- as.numeric(str_replace_all(test_predictions_3$`0-250000`,"\\[|\\]", ""))
+test_predictions_3$`650000+` <- as.numeric(str_replace_all(test_predictions_3$`650000+`,"\\[|\\]", "")) 
+
+austin_test <- read_csv("./data/austin_test_2.csv")
+
+test_results_2 <- austin_test %>%
+  select(priceRange) %>%
+  bind_cols(test_predictions_3) %>%
+  rename(Truth = priceRange) %>%
+  mutate(Truth = case_when(Truth == "0" ~ "0-250000",
+                           Truth == "1" ~ "250000-350000",
+                           Truth == "2" ~ "350000-450000",
+                           Truth == "3" ~ "450000-650000",
+                           Truth == "4" ~ "650000+"      ))
+```
+
+```{r chunk45.2, cache=TRUE}
+
+```
+
+```{r message=FALSE, warning=FALSE}
+test_results_2 <- test_results_2 %>%
+    mutate(pred_class = pmap_chr(across(`0-250000`:`650000+`),
+                        ~ names(c(...)[which.max(c(...))])))
+```
+
+```{r message=FALSE, warning=FALSE, fig.height=6, fig.width=14}
+conf2 <- test_results_2 %>% 
+  conf_mat(Truth, pred_class) %>% 
+  autoplot(type = "heatmap") +
+  scale_fill_scico(begin = 0.2, end = 0.7, palette = "bamako") +  
+  labs(title = "Confusion Matrix - XGBoost multi-class AFTER Tuning\n") +
+  scale_x_discrete(position = "top")
+# compare to initial model
+
+conf1 + conf2
+```
+```{r}
+conf1
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# if we wanted to use multi_roc
+
+# test_results_2_auc <- test_results_2 %>% 
+# mutate(Truth = factor(case_when(Truth == "0-250000"      ~ "P1_true",
+#                                 Truth == "250000-350000" ~ "P2_true",
+#                                 Truth == "350000-450000" ~ "P3_true",
+#                                 Truth == "450000-650000" ~ "P4_true",
+#                                 Truth == "650000+"       ~ "P5_true" ),
+#                       levels = c("P1_true", "P2_true", "P3_true", "P4_true", "P5_true")),
+#        n = 1) %>%
+# rename(P1_pred_m1 = "0-250000",
+#        P2_pred_m1 = "250000-350000",
+#        P3_pred_m1 = "350000-450000",
+#        P4_pred_m1 = "450000-650000",
+#        P5_pred_m1 = "650000+" ) %>% 
+# mutate(row_num = 1:n()) %>% 
+# pivot_wider(names_from = Truth, values_from = n, values_fill = 0) %>% 
+# select(-c(row_num, pred_class))
+# 
+# auc_mult <- multi_roc(data.frame(test_results_2_auc), force_diag = TRUE) # need df, not tibble
+# auc_mult$AUC
+# plot_roc_df <- plot_roc_data(auc_mult)
+# cal_auc()
+# multiclass.roc(test_results_2$Truth, test_results_2$pred_class)
+# 
+# roc3 <- plot_roc_df %>% 
+#   ggplot(aes(1-Specificity, Sensitivity)) +
+#   geom_abline(lty = 2, color = "gray80", size = 1.5) +
+#   geom_path(aes(color = Group), alpha = 0.7, size = 1.1) +
+#   coord_equal() +
+#   labs(color = "priceRange",
+#        title = "ROC curves for XGBoost multi-class after Tuning") 
+```
+
+```{r chunk30, message=FALSE, warning=FALSE, cache=TRUE, fig.height=6, fig.width=12}
+auc2 <- test_results_2 %>% 
+  roc_auc(as.factor(Truth), `0-250000`:`650000+`)
+auc1 <- test_results_1 %>% 
+  roc_auc(as.factor(Truth), `0-250000`:`650000+`)
+
+roc2 <- test_results_2 %>% 
+  roc_curve(as.factor(Truth), `0-250000`:`650000+`) %>% 
+  ggplot(aes(1-specificity, sensitivity, color = .level)) +
+  geom_abline(lty = 2, color = "gray80", size = 1.5) +
+  geom_path(alpha = 0.7, size = 1.1) +
+  coord_equal() +
+  labs(color = "priceRange",
+       title = "ROC curves for XGBoost multi-class AFTER Tuning",
+       subtitle = "AUC = 0.8821398") +
+  theme(legend.position = c(0.8, 0.3),
+        legend.background = element_rect(fill = "black"))
+
+roc1 + roc2
+```
+
+```{r }
+#library(SHAPforxgboost)
+#library(xgboost)
+#library(data.table)
+
+unnest(best_5_tuned_models) %>% select(c(FinalObjectiveValue, 1:7)) # final obj = mlogloss
+
+param_list <- list(objective = "multi:softprob",
+                   eval_metric = "mlogloss",
+                   num_class = 5,
+                   eta = 0.03411075,
+                   max_depth = 6,
+                   gamma = 0.01,
+                   subsample = 0.7702243,
+                   colsample_bytree = 0.6781905,
+                   min_child_weight = 3.299003 )
+
+austin_training_2 <- data.table(austin_training)
+dataX_2 <- as.matrix(austin_training_2[,-1])
+
+mod <- xgboost::xgboost(data = dataX_2, 
+                        label = as.matrix(austin_training_2[["priceRange"]]), 
+                        params = param_list, nrounds = 509,
+                        verbose = FALSE, nthread = parallel::detectCores() - 2,
+                        early_stopping_rounds = NULL)
+
+head(dataX_2)
+```
+
+```{r}
+shap_values <- shap.values(xgb_model = mod, X_train = dataX_2) # takes a while
+
+shap_values$mean_shap_score
+
+shap_long <- shap.prep(xgb_model = mod, X_train = dataX_2) # takes a while
+```
+
+
+```{r fig.width=10, fig.height=6}
+shap.plot.summary(shap_long) +
+  ggdark::dark_theme_bw() +
+  theme(legend.position = 'bottom') +
+  labs(title = "SHAP Values for Features in XGBoost Model")
+```
+```{r fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
+shap_force_plot <- shap.prep.stack.data(shap_contrib = shap_values$shap_score, 
+                                        top_n = 3, n_groups = 6)
+# you may choose to zoom in at a location, and set y-axis limit using `y_parent_limit`  
+shap.plot.force_plot(shap_force_plot, zoom_in_group = 5, y_parent_limit = c(-2.2,2.2)) +
+  ggdark::dark_theme_bw() +
+  labs(title = "SHAP Force Plot",
+       subtitle = "Shows feature contribution to XGBoost prediction at each observation")
+
+```
+```{r fig.height=10, fig.width=10}
+shap.plot.force_plot_bygroup(shap_force_plot) +
+  ggdark::dark_theme_bw() +
+  labs(title = "SHAP Force Plot Clusters - Austin Neighborhoods?")
+```
+```{r}
+best_tuned_model
+```
+
+```{r chunk49, eval=FALSE}
+boto_client <- session$boto_session$client("sagemaker")
+austin_model <- boto_client$list_models()[["Models"]] %>% 
+  map_chr("ModelName") %>% 
+  .[[1]]
+```
+
+```{r chunk49.2}
+austin_model
+```
+
+```{r}
+```
+
+
+## Batch Inference on Holdout Data
+
+We needed to submit probabilities of every `priceRange` bin for each observation (home). There are 5 possible price bins:
+`0-250000`, `250000-350000`, `350000-450000`, `450000-650000`, `650000+`
+So we'll need to submit a .cvs file containing the holdout id column + 5 price columns containing our predicted probabilities. To run inference we'll pass our "baked" holdout data into our best performing XGboost model.  
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+
+
+
+
+```{r}
+xgb_spec <- 
+  boost_tree(trees = 1000, 
+             tree_depth = tune(),
+             min_n = tune(),
+             mtry = tune(),
+             sample_size = tune(),
+             learn_rate = tune()) %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
+
+xgb_word_wf <- workflow(austin_rec, xgb_spec)
+
+set.seed(123)
+xgb_grid <-
+  grid_max_entropy(
+    tree_depth(c(5L, 10L)),
+    min_n(c(10L, 40L)),
+    mtry(c(5L, 10L)),
+    sample_prop(c(0.5, 1.0)),
+    learn_rate(c(-2, -1)),
+    size = 20
+  )
+
+xgb_grid
+```
+
+Now we can tune across the grid of parameters and our resamples. Since we are trying
+quite a lot of hyperparameter combinations, let's use
+[racing](https://juliasilge.com/blog/baseball-racing/) to quit early on clearly bad
+hyperparameter combinations.
+
+```{r}
+library(finetune)
+doParallel::registerDoParallel()
+
+set.seed(234)
+xgb_word_rs <- 
+  tune_race_anova(
+    xgb_word_wf,
+    austin_folds,
+    grid = xgb_grid,
+    metrics = metric_set(mn_log_loss),
+    control = control_race(verbose_elim = TRUE)
+  )
+
+xgb_word_rs
+```
+
+That takes a little while but we did it!
+
+## Evaluate results
+
+First off, how did the "race" go?
+
+```{r}
+plot_race(xgb_word_rs)
+```
+
+We can look at the top results manually as well.
+
+```{r}
+show_best(xgb_word_rs)
+```
+
+Let's use `last_fit()` to fit one final time to the **training** data and evaluate
+one final time on the **testing** data, with the numerically optimal result from
+`xgb_word_rs`.
+
+```{r}
+xgb_last <- 
+  xgb_word_wf %>%
+  finalize_workflow(select_best(xgb_word_rs, "mn_log_loss")) %>%
+  last_fit(austin_split)
+
+xgb_last
+```
+
+How did this model perform on the testing data, that was not used in tuning/training?
+
+```{r}
+collect_predictions(xgb_last) %>%
+    mn_log_loss(priceRange, `.pred_0-250000`:`.pred_650000+`)
+```
+
+This result is pretty good for a single (not ensembled) model and is a wee bit better
+than what I did during the SLICED competition. I had an R bomb right as I was
+finishing up tuning a model just like the one I am demonstrating here!
+
+How does this model perform across the different classes?
+
+```{r}
+collect_predictions(xgb_last) %>%
+    conf_mat(priceRange, .pred_class) %>%
+    autoplot()
+```
+
+We can also visualize this with an ROC curve.
+
+```{r}
+collect_predictions(xgb_last) %>%
+    roc_curve(priceRange,  `.pred_0-250000`:`.pred_650000+`) %>%
+    ggplot(aes(1 - specificity, sensitivity, color = .level)) +
+    geom_abline(lty = 2, color = "gray80", size = 1.5) +
+    geom_path(alpha = 0.8, size = 1.2) +
+    coord_equal() +
+    labs(color = NULL)
+```
+
+Notice that it is easier to identify the most expensive homes but more difficult to
+correctly classify the less expensive homes.
+
+What features are most important for this xgboost model?
+
+```{r}
+library(vip)
+extract_workflow(xgb_last) %>%
+    extract_fit_parsnip() %>%
+    vip(geom = "point", num_features = 15)
+```
+
+The spatial information in latitude/longitude are by far the most important. Notice
+that the model uses `low_price_words` more than it uses, for example, whether there
+is a spa or whether it is a single family home (as opposed to a townhome or condo).
+It looks like the model is trying to distinguish some of those lower priced
+categories. The model does *not* really use the `high_price_words` variable, perhaps
+because it is already easy to find the expensive houses.
+
+The two finalists from SLICED go on to compete next Tuesday, which should be fun and
+interesting to watch! I have enjoyed the opportunity to participate this season.
