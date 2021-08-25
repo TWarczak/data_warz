@@ -1,5 +1,5 @@
 ---
-title: "Multi-class Prediction of Austin housing prices with XGBoost and AWS SageMaker in R"
+title: "Combining AWS SageMaker + RStudio Tools; Predicting House Price using Engineered NLP Features and Multi-class XGBoost, with Beautiful Geospacial Plots and SHAP to Explain Model Behavior."
 author: Todd Warczak
 date: '2021-08-19'
 slug: XGB-Multi-Class
@@ -24,8 +24,8 @@ tags:
   - ggmaps
   - Leaflet
   - Geospacial
-subtitle: 'Interpretable XGBoost with SHAP'
-summary: "In this post I explore an Austin Housing dataset and predict binned housing price. EDA includes static and interactive geospacial feature maps and feature engineering using natural language processing (NLP). In my RStudio I utilize a conda environment to access SageMaker's XGBoost, S3, and EC2 for distributed computing. After model training/tuning/evaluation I run SHapley Additive exPlanations (SHAP) to understand what the XGBoost model considered important features and how it clustered similar observations. I run batch inference with the best performing model to predict the price of Austin houses in holdout data. I then submitted predictions to the Kaggle competition. Multiclass Log Loss was the evaluation algorithm and my submission scored ___, which would have placed __ in the live competition."
+subtitle: 'Interpretable XGBoost with {ggmaps}, Leaflet Interactive Plots, and SHapley Additive exPlanations (SHAP)'
+summary: "In this post I explore an Austin Housing dataset and predict binned housing price. EDA includes static and interactive geospacial feature maps and feature engineering using natural language processing (NLP). In my RStudio I utilize a conda environment to access SageMaker's XGBoost, S3, and EC2 for distributed computing. After model training/tuning/evaluation, I run batch inference with the best performing model to predict the price of Austin houses from holdout data. I then submit predictions to the Kaggle competition. Multiclass Log Loss was the evaluation algorithm and my submission scored 0.8876 (lower is better), which would have placed 6th in the live competition. After submission, I run SHapley Additive exPlanations (SHAP) to understand what the XGBoost model considered important features and how it clustered similar observations."
 featured: no
 image:
   caption: ''
@@ -37,7 +37,7 @@ image:
 library(knitr)
 knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE, 
                       echo = TRUE, dpi = 300, cache.lazy = FALSE,
-                      tidy = "styler", fig.width = 8, fig.height = 5)
+                      tidy = "styler")
 library(scales)
 library(tidyverse)
 library(tidymodels)
@@ -46,12 +46,8 @@ library(leaflet)
 library(scico)
 library(patchwork)
 library(tidytext)
-library(paws)
 library(reticulate)    # calling the SageMaker Python SDK from R
 theme_set(ggdark::dark_theme_minimal())
-
-
-#library(finetune)
 ```
 
 In this post I explore an Austin, TX real estate dataset and predict binned housing price. EDA includes static and interactive geospacial feature maps and feature engineering using natural language processing (NLP). In my RStudio I utilize a conda environment to access SageMaker's XGBoost, S3, and EC2 for distributed computing. After model training/tuning/evaluation I run SHapley Additive exPlanations (SHAP) to understand what the XGBoost model considered important features and how it clustered similar observations. I ran batch inference with the best performing model to predict the price of Austin houses in holdout data and then submitted predictions to the [Kaggle](https://www.kaggle.com/c/sliced-s01e11-semifinals/) competition. Multiclass Log Loss was the evaluation algorithm and my submission scored ___ (lower is better), which would have placed __ in the live competition.
@@ -62,12 +58,12 @@ Our modeling goal is to predict  given features about the real
 estate listing. This is a multiclass classification challenge, where . The main data set
 provided is in a CSV file called `training.csv`.
 
-```{r}
+```{r index-1}
 train_raw <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-austin-r-xgb-house-price/train.csv")
 
 holdout <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-austin-r-xgb-house-price/test.csv")
 names(train_raw)
-names(holdout) # lacks priceRange
+#names(holdout) # lacks priceRange
 table(train_raw$priceRange)
 ```
 
@@ -75,7 +71,7 @@ Are Austin house prices clustered by neighborhoods? Do prices change near highwa
 
 We can use the `{leaflet}` package to build interactive maps overlayed with our data. Zoom to dive deeper into individual neighborhoods.
 
-```{r fig.height=10, fig.width=10}
+```{r index-2, fig.height=10, fig.width=10}
 q <- train_raw %>%
      mutate(priceRange_bin = parse_number(priceRange))
 
@@ -104,7 +100,7 @@ m
 
 I want to see multiple features distributed on a similar map. Let's build hex plots for the numeric predictors and use `{patchwork}` to make one nice plot.   
 
-```{r fig.width=10, fig.height=14}
+```{r index-3, fig.width=10, fig.height=14}
 
 plot_hex <- function(var, title) {
   q %>%
@@ -121,9 +117,9 @@ plot_hex <- function(var, title) {
 (plot_hex(numOfBathrooms, "Bathrooms") + plot_hex(numOfBedrooms,"Bedrooms")) 
 ```
 
-I'm going to drop `city` and `hasSpa` for being imballanced. I don't trust humans to tally `numOfPatioAndPorchFeatures` consistently, so let's drop that too.  
+I'm going to drop `city` for being imballanced. I don't trust humans to tally `numOfPatioAndPorchFeatures` consistently, but we'll keep it in. Ditto for hasSpa.   
 
-```{r fig.width=10, fig.height=8}
+```{r index-4, fig.width=10, fig.height=8}
 drop1 <- plot_hex(priceRange_bin,"Price by city") +
   facet_wrap(~city)
 
@@ -136,7 +132,7 @@ drop3 <- plot_hex(priceRange_bin,"Price by hasSpa") +
 ```
 I always like making density plots of numeric features for classification predictions. Just another way to see if any category stands out within a feature.  
 
-```{r fig.width=10, fig.height=10}
+```{r index-5, fig.width=10, fig.height=10}
 dense <- q %>%
          select(-c(uid, city, description, homeType, 
                    hasSpa, priceRange_bin, yearBuilt)) %>%
@@ -160,7 +156,7 @@ Between the maps, hex-plots and density plots, it seems `latitude`, `longitude`,
 
 Let's borrow some tricks from [Julia Silge](https://juliasilge.com), the OG of text-mining in R, to identify important words and then add dummy variables for important words found in an observations `description`. 
 
-```{r}
+```{r index-6}
 austin_text <- 
   train_raw %>%
   mutate(priceRange = parse_number(priceRange) + 100000) %>% # make bin categories numeric so we can run glm
@@ -173,7 +169,7 @@ austin_text %>%
 
 Find word frequencies per `priceRange` bin for the top 100 words.
 
-```{r}
+```{r index-7}
 top_words <- 
   austin_text %>%
   count(word, sort = TRUE) %>%
@@ -197,7 +193,7 @@ word_freqs
 Build a glm that shows word frequency **increasing** across `priceRange` bins or **decreasing**
 across `priceRange` bins.
 
-```{r}
+```{r index-8}
 word_mods <-
   word_freqs %>%
   nest(data = c(priceRange, n, price_total, proportion)) %>%
@@ -215,7 +211,7 @@ These are the words that we'd like to try to detect and use in feature engineeri
 for our xgboost model, rather than using all the text tokens as features
 individually.
 
-```{r}
+```{r index-9}
 higher_words <-
   word_mods %>%
   filter(p.value < 0.05) %>%
@@ -232,7 +228,7 @@ lower_words <-
 We can look at these changes with price directly. For example, these are the words
 most associated with price decrease.
 
-```{r, fig.width=12, fig.height=14}
+```{r index-10, fig.width=12, fig.height=14}
 high <- word_freqs %>% 
   filter(word %in% higher_words) %>%
   ggplot(aes(priceRange, proportion, color = word)) +
@@ -256,15 +252,13 @@ low <- word_freqs %>%
 high/low
 ```
 
-Cheaper houses are "great" but not expensive houses, and apparently you don't need to
-mention the location ("close", "minutes", "location") of more expensive houses.
+Some of these words show up in a great linear trend across the `priceRange` bins. I assume XGBoost will find them useful. 
 
-## Build a model
+## XGBoost
 
-Let's start our modeling by setting up our "data budget", as well as the metrics
-(this challenge was evaluate on multiclass log loss).
+Before we plug data into SageMaker's XGBoost, we need to tranform the target `priceRange` into a factor of numbers. It is NOT recommended to transform the target inside a recipe. To transform the predictors and add our engineered high/low word variables, we'll use `{tidymodels}` recipe that we can easily apply to our train/test/validation/holdout data.  
 
-```{r}
+```{r index-11}
 train_raw$priceRange <- factor(recode(train_raw$priceRange,
                                       "0-250000"      = "0", 
                                       "250000-350000" = "1",
@@ -275,32 +269,31 @@ train_raw$priceRange <- factor(recode(train_raw$priceRange,
 
 head(train_raw$priceRange, n = 20)
 ```
-
-
-```{r}
+Split data
+```{r index-12}
 # Make 75/12.5/12.5 Train/Validate/Test split
 set.seed(333)
 splits  <- initial_split(train_raw, prop = 0.75, strata = priceRange)
 
 train <- training(splits)
-other  <- testing(splits)
+other <- testing(splits)
 
 splits2 <- initial_split(other, prop = 0.50, strata = priceRange)
 validation <- training(splits2)
 test <- testing(splits2)
 
+# Before predicting holdout data, refit best models on train+validation data.
+tr_val <- bind_rows(train, validation) 
+
 print(splits)
 print(splits2)
 ```
 
-For feature engineering, let's use basically everything in the dataset (aside from
-`city`, which was not a very useful variable) and [create dummy or indicator
-variables using
-`step_regex()`](https://recipes.tidymodels.org/reference/step_regex.html). The idea
-here is that we will detect whether these words associated with low/high price are
-there and create a yes/no variable indicating their presence or absence.
+Let's add only the most significant high/low words. If they help the model, we could tinker with these features more.  
 
-```{r}
+Drop `city` and `description`, reduce the sparse categories in `hometype` to an `other` category, then dummy both `hasSpa` and `homeType`. XGBoost only works with numeric data.
+
+```{r index-13}
 higher_words_6 <- word_mods %>%
                    filter(p.value < 0.05) %>%
                    slice_max(estimate, n = 6) %>%
@@ -314,92 +307,84 @@ lower_words_5 <- word_mods %>%
 higher_pat <- glue::glue_collapse(higher_words_6, sep = "|")
 lower_pat <- glue::glue_collapse(lower_words_5, sep = "|")
 
-rec_austin <-
+rec_austin1 <-
   recipe(priceRange ~ ., data = train) %>%
   step_regex(description, pattern = higher_pat, result = "high_price_words") %>%
   step_regex(description, pattern = lower_pat, result = "low_price_words") %>%
-  step_rm(c(uid, city, description, hasSpa, numOfPatioAndPorchFeatures)) %>%
+  step_rm(c(uid, city, description)) %>%
+  step_mutate(hasSpa = as.factor(hasSpa)) %>%
   step_novel(homeType) %>% 
-  # assign novel factor level if new data has homeType category unseen in train data
   step_unknown(homeType) %>% 
-  # assign missing value to level "unknown"
   step_other(homeType, threshold = 0.02) %>%
-  # low occuring values get pooled into "other" categoory
   step_dummy(all_nominal_predictors()) %>%
-  #step_nzv(all_predictors()) %>% 
-  # removes highly sparse and unbalanced predictors
   prep()
 ```
 
-```{r}
-austin_training <- rec_austin %>% 
-                  juice() %>% 
-                  select(priceRange, everything()) # put priceRange as 1st column
-head(austin_training)
-#table(austin_training$priceRange)
+After running `prep()` on the training data, `bake()` applies the recipe steps to each split data. XGBoost needs the target variable `priceRange` to be the first column.  
+```{r index-14}
+austin_training <-  rec_austin1 %>% 
+                     juice() %>% 
+                     select(priceRange, everything()) # put priceRange as 1st column
 
-austin_validation <- bake(rec_austin, new_data = validation) %>% 
-                    select(priceRange, everything()) # put priceRange as 1st column
+austin_validation <- bake(rec_austin1, new_data = validation) %>% 
+                     select(priceRange, everything())
 
-#table(austin_validation$priceRange)
+austin_test <-       bake(rec_austin1, new_data = test) %>% 
+                     select(priceRange, everything()) 
 
-austin_test <- bake(rec_austin, new_data = test) %>% 
-              select(priceRange, everything()) # put priceRange as 1st column
+austin_holdout <-    bake(rec_austin1, new_data = holdout) 
+                     # priceRange not in this data
 
-#table(austin_test$priceRange)
+austin_tr_val <-     bake(rec_austin1, new_data = tr_val) %>%
+                     select(priceRange, everything())
 
-id_holdout <- holdout %>% select(uid) 
-austin_holdout <- bake(rec_austin, new_data = holdout)
-
-#table(austin_training$high_price_words)
+id_holdout <- holdout %>% select(uid) # save for batch inference at end
 ```
 
-Now let's create a tunable xgboost model specification, tuning a lot of the important
-model hyperparameters, and combine it with our feature engineering recipe in a
-`workflow()`. We can also create a custom `xgb_grid` to specify what parameters I
-want to try out, like not-too-small learning rate, avoiding tree stubs, etc. I chose
-this parameter grid to get reasonable performance in a reasonable amount of tuning
-time.
+Save all these data locally, then send them over to your S3 bucket on AWS. 
+```{r index-15, eval=FALSE}
+dir.create("../2021-08-01-austin-r-xgb-house-price/data") # local
 
-```{r}
+write_csv(austin_training, col_names = FALSE,
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_training.csv")
 
-# dir.create("../2021-08-01-austin-r-xgb-house-price/data") # local
+write_csv(austin_validation, col_names = FALSE,
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_validation.csv")
 
-write_csv(austin_training, 
-          "../2021-08-01-austin-r-xgb-house-price/data/austin_training.csv", 
-          col_names = FALSE)
-write_csv(austin_validation, 
-          "../2021-08-01-austin-r-xgb-house-price/data/austin_validation.csv", 
-          col_names = FALSE)
-write_csv(austin_test %>% select(-priceRange), 
-          "../2021-08-01-austin-r-xgb-house-price/data/austin_test.csv", 
-          col_names = FALSE)
-write_csv(austin_test, 
-          "../2021-08-01-austin-r-xgb-house-price/data/austin_test_2.csv", 
-          col_names = TRUE) # Need this later to use with results
+write_csv(austin_test %>% select(-priceRange),  col_names = FALSE,
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_test.csv")
 
-write_csv(austin_holdout, 
-          "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout.csv", 
-          col_names = FALSE) 
-write_csv(id_holdout, 
-          "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout_id.csv",
-          col_names = FALSE) # Need this later to use with holdout results
+write_csv(austin_test, col_names = TRUE,  # Need this later to use with results
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_test_2.csv")
+          
+write_csv(austin_holdout, col_names = FALSE,
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout.csv") 
+
+# Need this later to use with holdout results
+write_csv(id_holdout, col_names = FALSE,
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout_id.csv") 
+
+write_csv(austin_tr_val, col_names = FALSE,
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_tr_val.csv") 
 ```
 
-```{r chunk13}
+Start up your conda environment in RStudio for running AWS SageMaker
+```{r index-16, eval=FALSE}
 use_condaenv("sagemaker-r", required = TRUE)
 sagemaker <- import("sagemaker")
 session <- sagemaker$Session()
 ```
 
-```{r}
+Set up your S3 bucket.  
+```{r index-17, eval=FALSE}
 bucket <- "twarczak-sagemaker7"
-project <- "austin"    # keep short. 32 character max job_name
+project <- "austin"    # keep short. 
 data_path <- paste0("s3://", bucket, "/", project, "/", "data")
 models_path <- paste0("s3://", bucket, "/", project, "/", "models")
 ```
 
-```{r chunk19, cache=TRUE}
+Send your `split` data to S3. XGBoost will find your data in the S3 bucket.  
+```{r index-18, eval= FALSE}
 s3_uploader <- sagemaker$s3$S3Uploader()
 
 s3_train <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_training.csv", 
@@ -410,9 +395,19 @@ s3_validation <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-hou
 
 s3_test <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test.csv", 
                               desired_s3_uri = data_path)
+
+s3_test_full <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test_2.csv", 
+                              desired_s3_uri = data_path)
+
+s3_holdout <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout.csv", 
+                                 desired_s3_uri = data_path)
+
+s3_tr_val <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_tr_val.csv", 
+                                desired_s3_uri = data_path)
 ```
 
-```{r chunk20}
+Set up AWS credentials so RStudio can talk to AWS, grab SageMaker's built-in XGBoost, and start your EC2 instance to begin modeling.  
+```{r index-19, eval=FALSE}
 region <- session$boto_region_name
 container <- sagemaker$image_uris$retrieve(framework = "xgboost", 
                                            region    = region, 
@@ -424,16 +419,16 @@ xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
                                                role               = role_arn,
                                                instance_count     = 1L,
                                                instance_type      = "ml.m4.16xlarge", 
-                                               volume_size        = 10L, 
+                                               volume_size        = 50L, 
                                                output_path        = models_path,
                                                sagemaker_session  = session,
                                                use_spot_instances = TRUE,
                                                max_run            = 1800L,
                                                max_wait           = 3600L )
-                                              # keep at ml.m4.16xlarge
 ```
 
-```{r chunk21}
+Set your first XGBoost model w/ baseline parameters. Use `softprob` multiclass because we'll need to send Kaggle a probability for each category of `priceRange`. Set `mlogloss` because that's the evaluation algorithm we'll be scored on. 
+```{r chunk21, eval=FALSE}
 xgb_estimator$set_hyperparameters(objective        = "multi:softprob",
                                   eval_metric      = "mlogloss",
                                   num_class        = 5L, # necessary for multiclass
@@ -447,38 +442,37 @@ xgb_estimator$set_hyperparameters(objective        = "multi:softprob",
                                   gamma            = 0.01)
 ```
 
-```{r chunk22}
-# Create training job name based project organization principles
-algo <- "xgb"    # keep short. 32 character max job_name
-timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S") # timestamp
-job_name_1 <- paste(project, algo, timestamp, sep = "-")
-s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
-                                                 content_type = 'csv')
-s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
-                                                 content_type = 'csv')
-input_data <- list('train'      = s3_train_input,
-                   'validation' = s3_valid_input)
+Give SageMaker models you build a unique identifier. Tell XGBoost where your data is in S3. 
+```{r chunk22, eval=FALSE}
+algo          <- "xgb"    # keep short
+timestamp      <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S") # timestamp
+job_name_a     <- paste(project, algo, timestamp, sep = "-")
+s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train, content_type = 'csv')
+s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation, content_type = 'csv')
+input_data     <- list('train'      = s3_train_input,
+                       'validation' = s3_valid_input)
 ```
 
-```{r chunk23}
+Fit first XGBoost model on training data you sent to S3 bucket. 
+```{r index-20, eval=FALSE}
 xgb_estimator$fit(inputs   = input_data,
-                  job_name = job_name_1,
+                  job_name = job_name_a,
                   wait     = FALSE)
 ```
-
-```{r chunk25}
-training_job_stats <- session$describe_training_job(job_name = job_name_1)
-final_metrics_1 <-  map_df(training_job_stats$FinalMetricDataList, 
+## Evaluate model
+```{r index-21 }
+training_job_stats <- session$describe_training_job(job_name = "austin-xgb-2021-08-24-19-07-45")
+final_metrics_a <-  map_df(training_job_stats$FinalMetricDataList, 
                            ~tibble(metric_name = .x[["MetricName"]],
                                    value = .x[["Value"]]))
 ```
 
-```{r chunk25.2}
-final_metrics_1
+```{r index-22.1}
+final_metrics_a
 ```
-
-```{r chunk26}
-predictions_path_1 <- paste0(models_path, "/", job_name_1, "/predictions") 
+Evaluate model on test data
+```{r index-22.2}
+predictions_path_1 <- paste0(models_path, "/", "austin-xgb-2021-08-24-19-07-45", "/predictions") 
 
 xgb_batch_predictor_1 <- xgb_estimator$transformer(instance_count     = 1L, 
                                                    instance_type      = "ml.m4.16xlarge", 
@@ -487,54 +481,60 @@ xgb_batch_predictor_1 <- xgb_estimator$transformer(instance_count     = 1L,
                                                    output_path        = predictions_path_1)
 ```
 
-```{r chunk27}
-xgb_batch_predictor_1$transform(data         = s3_test, 
+```{r index-23, eval=FALSE}
+xgb_batch_predictor_1$transform(data         = s3_test,  # test set LACKING the TRUE `priceRange`
                                 content_type = 'text/csv',
                                 split_type   = "Line",
-                                job_name     = job_name_1,
+                                job_name     = "austin-xgb-2021-08-24-19-07-45",
                                 wait         = FALSE)
 ```
 
-```{r chunk29, message=FALSE, warning=FALSE}
-
+Compare predictions for the test data to actual `priceRange` "truth".
+Download the predicted `priceRange` for every observation.
+```{r index-24}
 s3_downloader <- sagemaker$s3$S3Downloader()
 s3_test_predictions_path_1 <- s3_downloader$list(predictions_path_1)
  
 dir.create("./predictions")
 s3_downloader$download(s3_test_predictions_path_1, "./predictions")
  
-
 test_predictions_1 <- read_csv("./predictions/austin_test.csv.out",
-                                col_names = FALSE  ) #%>% 
-                      # pull(X1)
-tp1 <- unnest(test_predictions_1)
+                                col_names = FALSE )
+```
 
-test_predictions_2 <- tp1 %>% 
+To get data in the correct format, do some wrangling. This is annoying.  
+```{r index-24.2}
+test_predictions_1.2 <- test_predictions_1 %>% 
                       transmute("0-250000"      = X1,
                                 "250000-350000" = X2,
                                 "350000-450000" = X3,
                                 "450000-650000" = X4,
                                 "650000+"       = X5 )
 
-test_predictions_2$`0-250000` <- as.numeric(str_replace_all(test_predictions_2$`0-250000`,"\\[|\\]", ""))
-test_predictions_2$`650000+` <- as.numeric(str_replace_all(test_predictions_2$`650000+`,"\\[|\\]", "")) 
+# Need to get rid of brackets
+test_predictions_1.2$`0-250000` <- as.numeric(str_replace_all(test_predictions_1.2$`0-250000`,"\\[|\\]", ""))
+test_predictions_1.2$`650000+` <- as.numeric(str_replace_all(test_predictions_1.2$`650000+`,"\\[|\\]", "")) 
+
+austin_test <- read_csv("./data/austin_test_2.csv") # test set WITH the TRUE `priceRange`
 
 test_results_1 <- austin_test %>% 
-  select(priceRange) %>% 
-  bind_cols(test_predictions_2) %>% 
-  rename(Truth = priceRange) %>% 
-  mutate(Truth = case_when(Truth == "0" ~ "0-250000", 
-                           Truth == "1" ~ "250000-350000",
-                           Truth == "2" ~ "350000-450000",
-                           Truth == "3" ~ "450000-650000", 
-                           Truth == "4" ~ "650000+"      ))
+                  select(priceRange) %>% 
+                  bind_cols(test_predictions_1.2) %>% 
+                  rename(Truth = priceRange) %>% 
+                  mutate(Truth = case_when(Truth == "0" ~ "0-250000", 
+                                           Truth == "1" ~ "250000-350000",
+                                           Truth == "2" ~ "350000-450000",
+                                           Truth == "3" ~ "450000-650000", 
+                                           Truth == "4" ~ "650000+"      ))
 ```
 
+Now we can understand the results. Each row sums to 1. Each column contains the probability the observations can be classified in that `priceRange` bin.  
 ```{r chunk29.2}
 head(test_results_1)
 ```
 
-```{r message=FALSE, warning=FALSE, fig.height=6, fig.width=8}
+First put the highest probability `priceRange` column name (per row) into a new column called `pred_class`. That will be the `priceRange` category predictred by our model for that observation. Then set up a confusion matrix to visualize predicted `priceRange` vs. actual `priceRange`.
+```{r index-25, fig.height=6, fig.width=8}
 test_results_1 <- test_results_1 %>%
     mutate(pred_class = pmap_chr(across(`0-250000`:`650000+`),
                         ~ names(c(...)[which.max(c(...))])))
@@ -548,8 +548,11 @@ conf1 <- test_results_1 %>%
 conf1
 ```
 
+Not a bad baseline. ROC curves aren't as useful in multi-class predictions IMO, but overall AUC is still a useful metric.  
+```{r index-26, fig.width=6, fig.height=6}
+auc1 <- test_results_1 %>% 
+  roc_auc(as.factor(Truth), `0-250000`:`650000+`)
 
-```{r chunk30, message=FALSE, warning=FALSE, cache=TRUE, fig.width=10}
 roc1 <- test_results_1 %>% 
   roc_curve(as.factor(Truth), `0-250000`:`650000+`) %>% 
   ggplot(aes(1-specificity, sensitivity, color = .level)) +
@@ -557,19 +560,17 @@ roc1 <- test_results_1 %>%
   geom_path(alpha = 0.7, size = 1.1) +
   coord_equal() +
   labs(color = "priceRange",
-       title = "ROC curves for XGBoost multi-class",
-       subtitle = "AUC = 0.8684319") +
+       title = "ROC: XGBoost multi-class",
+       subtitle = paste("AUC = ", auc1$.estimate)) +
   theme(legend.position = c(0.8, 0.3),
         legend.background = element_rect(fill = "black"))
 roc1
 ```
 
-```{r}
-# res <- test_results_1 %>% roc_curve(as.factor(Truth), `0-250000`:`650000+`)
-# res
-```
+## Hyperparameter Tuning
 
-```{r chunk32}
+To build an XGBoost model better than our baseline model, we need to find a better combination of hyperparameters. First set SageMaker's estimator with the static parameters. 
+```{r index-27, eval=FALSE}
 xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
                                                role               = role_arn,
                                                instance_count     = 1L,
@@ -580,41 +581,39 @@ xgb_estimator <- sagemaker$estimator$Estimator(image_uri          = container,
                                                use_spot_instances = TRUE,
                                                max_run            = 1800L,
                                                max_wait           = 3600L )
-                                              # keep at ml.m4.16xlarge
 
 xgb_estimator$set_hyperparameters(objective        = "multi:softprob",
                                   eval_metric      = "mlogloss",
                                   num_class        = 5L,
                                   alpha            = 1L ) 
-#max_depth 0 w/ tree_method "hist" & grow_policy "lossguide"
-                                 # tree_method      = "hist",
-                                 # grow_policy      = "lossguide",
 ```
-**Tunable**
-```{r chunk33}
+Now set the **Tunable Parameters**.
+```{r index-28, eval=FALSE}
 hyperp_ranges <- list(num_round = sagemaker$tuner$IntegerParameter(500L, 800L),
                       max_depth = sagemaker$tuner$IntegerParameter(5L, 8L),
               eta              = sagemaker$tuner$ContinuousParameter(0.01,0.07),
               colsample_bytree = sagemaker$tuner$ContinuousParameter(0.5, 0.75),
               min_child_weight = sagemaker$tuner$ContinuousParameter(1.0, 7.0),
               subsample        = sagemaker$tuner$ContinuousParameter(0.5, 0.9),
-              gamma            = sagemaker$tuner$ContinuousParameter(0.01, 0.1))
+              gamma            = sagemaker$tuner$ContinuousParameter(0.01, 0.4, "Logarithmic"))
 ```
-Create `HyperparameterTuner` object.
-```{r chunk34}
+
+Create `HyperparameterTuner` object. I'm running 10 models in parallel, which might be too many, but it cuts down training time. Also running a bayesian optimizer instead of hyperparameter grid. 
+```{r index-29, eval=FALSE}
 tuner <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator,
                                              objective_metric_name = "validation:mlogloss",
                                              objective_type        = "Minimize",
                                              hyperparameter_ranges = hyperp_ranges, 
                                              strategy              = "Bayesian",
-                                             max_jobs              = 150L,
-                                             max_parallel_jobs     = 4L)
+                                             max_jobs              = 250L,
+                                             max_parallel_jobs     = 10L)
 ```
-Define S3 location of data sets and tuning job name.
-```{r chunk35}
+
+Keep everything organized. Every training/tuning/transform job is a little different. Give every job a unique identifier. You can find info about each job within SageMaker. Either in the `Training` or `Inference` tabs. 
+```{r index-30, eval=FALSE}
 algo <- "xgb"
 timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
-job_name_x <- paste(project, algo, timestamp, sep = "-")
+job_name_b <- paste(project, algo, timestamp, sep = "-")
 s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_train,
                                                  content_type = 'csv')
 s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
@@ -622,31 +621,35 @@ s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_validation,
 input_data <- list('train'      = s3_train_input,
                    'validation' = s3_valid_input)
 ```
-### Step 9 - Start tuning job
-```{r chunk36}
+
+### Start tuning job
+```{r index-31, eval=FALSE}
 tuner$fit(inputs   = input_data, 
-          job_name = job_name_x,
+          job_name = job_name_b,
           wait     = FALSE )
 ```
-### Step 10 - Evaluate tuning job results
-```{r chunk38}
-# find the jobs names in aws services: sagemaker, training, hyperparameter tuning jobs
-tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics("austin-xgb-2021-08-21-19-26-19")
+
+### Evaluate tuning job results
+```{r index-32 }
+# find the jobs names in aws services: sagemaker/training/hyperparameter tuning jobs
+tuning_job_results <- sagemaker$HyperparameterTuningJobAnalytics("austin-xgb-2021-08-24-19-26-01")
 tuning_results_df <- tuning_job_results$dataframe()
 ```
 
-```{r chunk38.2}
+These are our best performing models.
+```{r index-33 }
 tuning_results_df %>% arrange(FinalObjectiveValue) %>% select(FinalObjectiveValue, everything())
 ```
-Plot a time series chart that shows how AUC developed over 100 training jobs, tuned
-by the Bayesian optimizer.
-```{r message=FALSE, warning=FALSE}
+
+Plot a time series chart that shows how AUC developed over 250 training jobs, tuned
+by the Bayesian optimizer. Also plot the hyperparameters to see if the optimizer found the sweet spots. 
+```{r index-34 }
 tune_plot0 <-ggplot(tuning_results_df, aes(TrainingEndTime, FinalObjectiveValue)) +
   geom_point() +
   xlab("Time") +
   ylab(tuning_job_results$description()$TrainingJobDefinition$StaticHyperParameters$`_tuning_objective_metric`) +
   ggtitle("Hyperparameter tuning mLogloss",  
-          "Progression over the period of all 100 training jobs") 
+          "Progression over the period of all 250 training jobs") 
 
 tune_plot1 <- ggplot(tuning_results_df, aes(num_round, max_depth)) +
   geom_point(aes(color = FinalObjectiveValue)) +
@@ -673,24 +676,22 @@ tune_plot4 <-ggplot(tuning_results_df, aes(gamma, eta)) +
           "Using a Bayesian strategy") 
 ```
 
-```{r message=FALSE, warning=FALSE, fig.height=10, fig.width=12}
+```{r index-35, fig.height=12, fig.width=12}
 (tune_plot0 + tune_plot1) / (tune_plot2 + tune_plot3) / (tune_plot4 + plot_spacer())
 ```
 
-```{r chunk41, message=FALSE, warning=FALSE}
+Let's take the top model then evaluate on the test data. 
+```{r index-36 }
 best_5_tuned_models <- tuning_results_df %>%
-                    #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
-                    arrange(FinalObjectiveValue) %>% 
-                    head(n=5) 
+                       arrange(FinalObjectiveValue) %>% 
+                       head(n=5) 
 
 #unnest(best_10_tuned_models) %>% select(FinalObjectiveValue, everything())
 
 best_tuned_model <- tuning_results_df %>%
-                    #filter(FinalObjectiveValue == max(FinalObjectiveValue)) %>%
                     arrange(FinalObjectiveValue) %>% 
                     head(n=1) %>% pull(TrainingJobName)
 
-#best_tuned_model
 training_job_stats <- session$describe_training_job(job_name = best_tuned_model)
 
 final_metrics_2 <-  map_df(training_job_stats$FinalMetricDataList, 
@@ -698,62 +699,62 @@ final_metrics_2 <-  map_df(training_job_stats$FinalMetricDataList,
                                    value       = .x[["Value"]]))
 ```
 
-```{r chunk41.2, cache=TRUE}
+This is how well the best model performed on the validation data. 
+```{r index-37 }
 final_metrics_2
 ```
 
-```{r chunk42, eval=FALSE}
-predictions_path_2 <- paste0(models_path, "/", best_tuned_model, "/predictions")
+Run the best model, `"austin-xgb-2021-08-24-19-26-01-087-8bf5c7e6"`, on the test data to predict `priceRange`. 
+```{r index-38}
+predictions_path_2 <- paste0(models_path, "/", "austin-xgb-2021-08-24-19-26-01-087-8bf5c7e6", "/predictions")
 
-session$create_model_from_job(best_tuned_model)
+session$create_model_from_job("austin-xgb-2021-08-24-19-26-01-087-8bf5c7e6")
 
-xgb_batch_predictor_2 <- sagemaker$transformer$Transformer(model_name     = best_tuned_model,
+xgb_batch_predictor_2 <- sagemaker$transformer$Transformer(model_name     = "austin-xgb-2021-08-24-19-26-01-087-8bf5c7e6",
                                                            instance_count = 1L, 
                                                            instance_type  = "ml.m4.4xlarge", 
                                                            strategy       = "MultiRecord",  
                                                            assemble_with  = "Line",
                                                            output_path    = predictions_path_2)
 ```
-### Step 12 - Start batch prediction job
 
-```{r chunk43}
-xgb_batch_predictor_2$transform(data         = s3_test, 
+Start batch prediction job. Note that I added a `-2` to the job_name below. SageMaker needs all jobs to be unique. Now this `Batch transform job` name is different than the model `Training job` name. 
+```{r index-39, eval=FALSE}
+xgb_batch_predictor_2$transform(data         = s3_test, # test set LACKING the TRUE `priceRange`
                                 content_type = 'text/csv',
                                 split_type   = "Line",
-                                job_name     = "austin-xgb-2021-08-20-22-08-07-083-347756be",
+                                job_name     = "austin-xgb-2021-08-24-19-26-01-087-8bf5c7e6-2",
                                 wait         = FALSE) 
 ```
 
-
-```{r chunk45}
-s3_downloader <- sagemaker$s3$S3Downloader()
-
+Download the predicted `priceRange` for every observation.
+```{r index-40.1}
 s3_test_predictions_path_2 <- s3_downloader$list(predictions_path_2)
  
-#dir.create("./predictions")
-
 s3_downloader$download(s3_test_predictions_path_2, "./predictions")
  
 test_predictions_2 <- read_csv("./predictions/austin_test.csv.out",
                                col_names = FALSE) #%>% pull(X1)
+```
 
-tp2 <- unnest(test_predictions_2)
-
-test_predictions_3 <- tp2 %>%
+Transform again, annoying, but there's a payoff. 
+```{r index-40.2}
+test_predictions_2.1 <- test_predictions_2 %>%
                       transmute("0-250000"      = X1,
                                 "250000-350000" = X2,
                                 "350000-450000" = X3,
                                 "450000-650000" = X4,
                                 "650000+"       = X5 )
  
-test_predictions_3$`0-250000` <- as.numeric(str_replace_all(test_predictions_3$`0-250000`,"\\[|\\]", ""))
-test_predictions_3$`650000+` <- as.numeric(str_replace_all(test_predictions_3$`650000+`,"\\[|\\]", "")) 
+# Need to get rid of brackets
+test_predictions_2.1$`0-250000` <- as.numeric(str_replace_all(test_predictions_2.1$`0-250000`,"\\[|\\]", ""))
+test_predictions_2.1$`650000+` <- as.numeric(str_replace_all(test_predictions_2.1$`650000+`,"\\[|\\]", "")) 
 
-austin_test <- read_csv("./data/austin_test_2.csv")
+austin_test <- read_csv("./data/austin_test_2.csv") # test set WITH the TRUE `priceRange`
 
 test_results_2 <- austin_test %>%
   select(priceRange) %>%
-  bind_cols(test_predictions_3) %>%
+  bind_cols(test_predictions_2.1) %>%
   rename(Truth = priceRange) %>%
   mutate(Truth = case_when(Truth == "0" ~ "0-250000",
                            Truth == "1" ~ "250000-350000",
@@ -762,17 +763,15 @@ test_results_2 <- austin_test %>%
                            Truth == "4" ~ "650000+"      ))
 ```
 
-```{r chunk45.2, cache=TRUE}
-
-```
-
-```{r message=FALSE, warning=FALSE}
+Make column for predicted `priceRange` from highest probability per row.  
+```{r index-41}
 test_results_2 <- test_results_2 %>%
     mutate(pred_class = pmap_chr(across(`0-250000`:`650000+`),
                         ~ names(c(...)[which.max(c(...))])))
 ```
 
-```{r message=FALSE, warning=FALSE, fig.height=6, fig.width=14}
+Build another confusion matrix and compare it to the untuned model confusion matrix.  
+```{r index-42, fig.height=6, fig.width=14}
 conf2 <- test_results_2 %>% 
   conf_mat(Truth, pred_class) %>% 
   autoplot(type = "heatmap") +
@@ -783,49 +782,12 @@ conf2 <- test_results_2 %>%
 
 conf1 + conf2
 ```
-```{r}
-conf1
-```
 
-```{r message=FALSE, warning=FALSE, include=FALSE}
-# if we wanted to use multi_roc
+That's a big improvement. Of 1,253 observations in the `austin_test` data, the tuned model correctly classifies 782 homes, compared to 747 correct classifications by the untuned model.
 
-# test_results_2_auc <- test_results_2 %>% 
-# mutate(Truth = factor(case_when(Truth == "0-250000"      ~ "P1_true",
-#                                 Truth == "250000-350000" ~ "P2_true",
-#                                 Truth == "350000-450000" ~ "P3_true",
-#                                 Truth == "450000-650000" ~ "P4_true",
-#                                 Truth == "650000+"       ~ "P5_true" ),
-#                       levels = c("P1_true", "P2_true", "P3_true", "P4_true", "P5_true")),
-#        n = 1) %>%
-# rename(P1_pred_m1 = "0-250000",
-#        P2_pred_m1 = "250000-350000",
-#        P3_pred_m1 = "350000-450000",
-#        P4_pred_m1 = "450000-650000",
-#        P5_pred_m1 = "650000+" ) %>% 
-# mutate(row_num = 1:n()) %>% 
-# pivot_wider(names_from = Truth, values_from = n, values_fill = 0) %>% 
-# select(-c(row_num, pred_class))
-# 
-# auc_mult <- multi_roc(data.frame(test_results_2_auc), force_diag = TRUE) # need df, not tibble
-# auc_mult$AUC
-# plot_roc_df <- plot_roc_data(auc_mult)
-# cal_auc()
-# multiclass.roc(test_results_2$Truth, test_results_2$pred_class)
-# 
-# roc3 <- plot_roc_df %>% 
-#   ggplot(aes(1-Specificity, Sensitivity)) +
-#   geom_abline(lty = 2, color = "gray80", size = 1.5) +
-#   geom_path(aes(color = Group), alpha = 0.7, size = 1.1) +
-#   coord_equal() +
-#   labs(color = "priceRange",
-#        title = "ROC curves for XGBoost multi-class after Tuning") 
-```
-
-```{r chunk30, message=FALSE, warning=FALSE, cache=TRUE, fig.height=6, fig.width=12}
+What about AUC? 
+```{r index-43, fig.height=6, fig.width=12}
 auc2 <- test_results_2 %>% 
-  roc_auc(as.factor(Truth), `0-250000`:`650000+`)
-auc1 <- test_results_1 %>% 
   roc_auc(as.factor(Truth), `0-250000`:`650000+`)
 
 roc2 <- test_results_2 %>% 
@@ -835,260 +797,617 @@ roc2 <- test_results_2 %>%
   geom_path(alpha = 0.7, size = 1.1) +
   coord_equal() +
   labs(color = "priceRange",
-       title = "ROC curves for XGBoost multi-class AFTER Tuning",
-       subtitle = "AUC = 0.8821398") +
+       title = "ROC: XGBoost multi-class TUNED",
+       subtitle = paste("AUC =", auc2$.estimate )) +
   theme(legend.position = c(0.8, 0.3),
         legend.background = element_rect(fill = "black"))
 
 roc1 + roc2
 ```
 
-```{r }
-#library(SHAPforxgboost)
-#library(xgboost)
-#library(data.table)
+The AUC impoved from 0.8737 to 0.8854.
 
-unnest(best_5_tuned_models) %>% select(c(FinalObjectiveValue, 1:7)) # final obj = mlogloss
-
-param_list <- list(objective = "multi:softprob",
-                   eval_metric = "mlogloss",
-                   num_class = 5,
-                   eta = 0.03411075,
-                   max_depth = 6,
-                   gamma = 0.01,
-                   subsample = 0.7702243,
-                   colsample_bytree = 0.6781905,
-                   min_child_weight = 3.299003 )
-
-austin_training_2 <- data.table(austin_training)
-dataX_2 <- as.matrix(austin_training_2[,-1])
-
-mod <- xgboost::xgboost(data = dataX_2, 
-                        label = as.matrix(austin_training_2[["priceRange"]]), 
-                        params = param_list, nrounds = 509,
-                        verbose = FALSE, nthread = parallel::detectCores() - 2,
-                        early_stopping_rounds = NULL)
-
-head(dataX_2)
+```{r index-44, include=FALSE}
+# Same process, but recipe does NOT contain high/low words from `description`. Simpler model
+rec_austin3 <-
+  recipe(priceRange ~ ., data = train) %>%
+  step_rm(c(uid, city, description)) %>% # keep (hasSpa, numOfPatioAndPorchFeatures, homeType)
+  step_mutate(hasSpa = as.factor(hasSpa)) %>%
+  step_novel(homeType) %>% 
+  # assign novel factor level if new data has homeType category unseen in train data
+  step_unknown(homeType) %>% 
+  # assign missing value to level "unknown"
+  step_other(homeType, threshold = 0.02) %>%
+  step_dummy(all_nominal_predictors()) %>% 
+  prep()
 ```
 
-```{r}
-shap_values <- shap.values(xgb_model = mod, X_train = dataX_2) # takes a while
-
-shap_values$mean_shap_score
-
-shap_long <- shap.prep(xgb_model = mod, X_train = dataX_2) # takes a while
+```{r index-45, , include=FALSE}
+austin_training3 <- rec_austin3 %>% juice() %>% select(priceRange, everything()) 
+austin_validation3 <- bake(rec_austin3, new_data = validation) %>% 
+                      select(priceRange, everything()) 
+austin_test3 <- bake(rec_austin3, new_data = test) %>% 
+                select(priceRange, everything()) 
+austin_holdout3 <- bake(rec_austin3, new_data = holdout)
+austin_tr_val3 <- bake(rec_austin3, new_data = tr_val) %>%
+                 select(priceRange, everything())
 ```
 
+```{r index-46, include=FALSE}
+write_csv(austin_training3, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_training3.csv", 
+          col_names = FALSE)
+write_csv(austin_validation3, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_validation3.csv", 
+          col_names = FALSE)
+write_csv(austin_test3 %>% select(-priceRange), 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_test5.csv", 
+          col_names = FALSE)
+write_csv(austin_test3, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_test_6.csv", 
+          col_names = TRUE) # Need this later to use with results
 
-```{r fig.width=10, fig.height=6}
-shap.plot.summary(shap_long) +
-  ggdark::dark_theme_bw() +
-  theme(legend.position = 'bottom') +
-  labs(title = "SHAP Values for Features in XGBoost Model")
+write_csv(austin_holdout3, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout3.csv", 
+          col_names = FALSE) 
+
+write_csv(austin_tr_val3, 
+          "../2021-08-01-austin-r-xgb-house-price/data/austin_tr_val3.csv", 
+          col_names = FALSE)
 ```
-```{r fig.height=6, fig.width=10, message=FALSE, warning=FALSE}
-shap_force_plot <- shap.prep.stack.data(shap_contrib = shap_values$shap_score, 
-                                        top_n = 3, n_groups = 6)
+```{r index-47, include=FALSE}
+s3_train3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_training3.csv", 
+                               desired_s3_uri = data_path)
+
+s3_validation3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_validation3.csv",
+                                    desired_s3_uri = data_path)
+
+s3_test3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test5.csv", 
+                              desired_s3_uri = data_path)
+
+s3_test3_full <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test_6.csv", 
+                              desired_s3_uri = data_path)
+
+s3_holdout3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout3.csv", 
+                              desired_s3_uri = data_path)
+
+s3_tr_val_3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_tr_val3.csv", 
+                              desired_s3_uri = data_path)
+```
+```{r index-48, include=FALSE}
+xgb_estimator3 <- sagemaker$estimator$Estimator(image_uri          = container,
+                                                role               = role_arn,
+                                                instance_count     = 1L,
+                                                instance_type      = "ml.m5.4xlarge", 
+                                                volume_size        = 50L, 
+                                                output_path        = models_path,
+                                                sagemaker_session  = session,
+                                                use_spot_instances = TRUE,
+                                                max_run            = 1800L,
+                                                max_wait           = 3600L)
+                                                #run 10 parallel jobs of m5.4xlarge
+
+xgb_estimator3$set_hyperparameters(objective        = "multi:softprob",
+                                   eval_metric      = "mlogloss",
+                                   num_class        = 5L,
+                                   alpha            = 1L ) 
+```
+```{r index-49, include=FALSE}
+hyperp_ranges2 <- list(num_round = sagemaker$tuner$IntegerParameter(500L, 800L),
+                       max_depth = sagemaker$tuner$IntegerParameter(4L, 8L),
+              eta              = sagemaker$tuner$ContinuousParameter(0.01,0.07),
+              colsample_bytree = sagemaker$tuner$ContinuousParameter(0.5, 0.85),
+              min_child_weight = sagemaker$tuner$ContinuousParameter(1.0, 7.0),
+              subsample        = sagemaker$tuner$ContinuousParameter(0.5, 0.9),
+              gamma            = sagemaker$tuner$ContinuousParameter(0.01, 0.5))
+              #try gamma (0.01, 0.5, "Logarithmic") next time
+```
+```{r index-50, include=FALSE}
+tuner3 <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator3,
+                                             objective_metric_name = "validation:mlogloss",
+                                             objective_type        = "Minimize",
+                                             hyperparameter_ranges = hyperp_ranges2, 
+                                             strategy              = "Bayesian",
+                                             max_jobs              = 200L,
+                                             max_parallel_jobs     = 10L)
+```
+```{r index-51, include=FALSE}
+algo <- "xgb"
+timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
+job_name_tw1 <- paste(project, algo, timestamp, sep = "-")
+s3_train_input3 <- sagemaker$inputs$TrainingInput(s3_data = s3_train3,
+                                                  content_type = 'csv')
+s3_valid_input3 <- sagemaker$inputs$TrainingInput(s3_data = s3_validation3,
+                                                  content_type = 'csv')
+input_data3 <- list('train'      = s3_train_input3,
+                    'validation' = s3_valid_input3)
+```
+```{r index-52, include=FALSE}
+tuner3$fit(inputs   = input_data3, 
+           job_name = job_name_tw1,
+           wait     = FALSE )
+```
+```{r index-53, include=FALSE}
+# find the jobs names in aws services: sagemaker, training, hyperparameter tuning jobs
+tuning_job_results4 <- sagemaker$HyperparameterTuningJobAnalytics("austin-xgb-2021-08-24-16-05-39")
+tuning_results_df4 <- tuning_job_results4$dataframe()
+```
+```{r index-54, include=FALSE}
+tuning_results_df4 %>% arrange(FinalObjectiveValue) %>% select(FinalObjectiveValue, everything())
+```
+```{r index-55, include=FALSE}
+tune_plot10 <-ggplot(tuning_results_df4, aes(TrainingEndTime, FinalObjectiveValue)) +
+  geom_point() +
+  xlab("Time") +
+  ylab(tuning_job_results4$description()$TrainingJobDefinition$StaticHyperParameters$`_tuning_objective_metric`) +
+  ggtitle("Hyperparameter tuning mLogloss",  
+          "Progression over the period of all 200 training jobs") 
+
+tune_plot11 <- ggplot(tuning_results_df4, aes(num_round, max_depth)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+
+tune_plot12 <-ggplot(tuning_results_df4, aes(eta, colsample_bytree)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+
+tune_plot13 <-ggplot(tuning_results_df4, aes(min_child_weight, subsample)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+
+tune_plot14 <-ggplot(tuning_results_df4, aes(gamma, eta)) +
+  geom_point(aes(color = FinalObjectiveValue)) +
+  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+  ggtitle("Hyperparameter tuning mLogloss", 
+          "Using a Bayesian strategy") 
+```
+```{r index-56, include=FALSE, fig.height=12, fig.width=12}
+(tune_plot5 + tune_plot6) / (tune_plot7 + tune_plot8) / (tune_plot9 + plot_spacer())
+```
+```{r index-57, include=FALSE, fig.height=12, fig.width=12}
+(tune_plot10 + tune_plot11) / (tune_plot12 + tune_plot13) / (tune_plot14 + plot_spacer())
+```
+```{r index-58, include=FALSE}
+best_5_tuned_models4 <- tuning_results_df4 %>%
+                    arrange(FinalObjectiveValue) %>% 
+                    head(n=5) 
+
+#unnest(best_10_tuned_models) %>% select(FinalObjectiveValue, everything())
+
+best_tuned_model4 <- tuning_results_df4 %>%
+                    arrange(FinalObjectiveValue) %>% 
+                    head(n=1) %>% pull(TrainingJobName)
+
+#best_tuned_model
+training_job_stats4 <- session$describe_training_job(job_name = best_tuned_model4)
+
+final_metrics_4 <-  map_df(training_job_stats4$FinalMetricDataList, 
+                           ~tibble(metric_name = .x[["MetricName"]],
+                                   value       = .x[["Value"]]))
+```
+```{r index-59, include=FALSE}
+final_metrics_4
+```
+```{r index-60, include=FALSE}
+predictions_path_4 <- paste0(models_path, "/", "austin-xgb-2021-08-24-16-05-39-168-ba9e4034", "/predictions")
+
+session$create_model_from_job("austin-xgb-2021-08-24-16-05-39-168-ba9e4034")
+
+xgb_batch_predictor_4 <- sagemaker$transformer$Transformer(model_name     = "austin-xgb-2021-08-24-16-05-39-168-ba9e4034",
+                                                           instance_count = 1L, 
+                                                           instance_type  = "ml.m5.4xlarge", 
+                                                           strategy       = "MultiRecord",  
+                                                           assemble_with  = "Line",
+                                                           output_path    = predictions_path_4)
+xgb_batch_predictor_4$transform(data         =  s3_test3, 
+                                content_type = 'text/csv',
+                                split_type   = "Line",
+                                job_name     = "austin-xgb-2021-08-24-16-05-39",
+                                wait         = FALSE) 
+```
+```{r index-61, include=FALSE}
+s3_test_predictions_path_4 <- s3_downloader$list(predictions_path_4)
+ 
+s3_downloader$download(s3_test_predictions_path_4, "./predictions")
+ 
+test_predictions_4 <- read_csv("./predictions/austin_test5.csv.out",
+                               col_names = FALSE) #%>% pull(X1)
+
+test_predictions_5 <- test_predictions_4 %>%
+                      transmute("0-250000"      = X1,
+                                "250000-350000" = X2,
+                                "350000-450000" = X3,
+                                "450000-650000" = X4,
+                                "650000+"       = X5 )
+ 
+test_predictions_5$`0-250000` <- as.numeric(str_replace_all(test_predictions_5$`0-250000`,"\\[|\\]", ""))
+test_predictions_5$`650000+` <- as.numeric(str_replace_all(test_predictions_5$`650000+`,"\\[|\\]", "")) 
+
+austin_test3 <- read_csv("./data/austin_test_6.csv")
+
+test_results_4 <- austin_test3 %>%
+  select(priceRange) %>%
+  bind_cols(test_predictions_5) %>%
+  rename(Truth = priceRange) %>%
+  mutate(Truth = case_when(Truth == "0" ~ "0-250000",
+                           Truth == "1" ~ "250000-350000",
+                           Truth == "2" ~ "350000-450000",
+                           Truth == "3" ~ "450000-650000",
+                           Truth == "4" ~ "650000+"      ))
+```
+```{r index-62, include=FALSE}
+test_results_4 <- test_results_4 %>%
+    mutate(pred_class = pmap_chr(across(`0-250000`:`650000+`),
+                        ~ names(c(...)[which.max(c(...))])))
+```
+```{r index-63, include=FALSE, fig.height=12, fig.width=14}
+conf4 <- test_results_4 %>% 
+  conf_mat(Truth, pred_class) %>% 
+  autoplot(type = "heatmap") +
+  scale_fill_scico(begin = 0.2, end = 0.7, palette = "bamako") +  
+  labs(title = "Confusion Matrix - XGBoost multi-class AFTER 3rd Tuning\n") +
+  scale_x_discrete(position = "top")
+# compare to other models
+
+(conf1 + conf2) / (conf3 + conf4)
+```
+```{r index-64, include=FALSE, fig.height=10, fig.width=10}
+auc4 <- test_results_4 %>% 
+  roc_auc(as.factor(Truth), `0-250000`:`650000+`)
+
+roc4 <- test_results_4 %>% 
+  roc_curve(as.factor(Truth), `0-250000`:`650000+`) %>% 
+  ggplot(aes(1-specificity, sensitivity, color = .level)) +
+  geom_abline(lty = 2, color = "gray80", size = 1.5) +
+  geom_path(alpha = 0.7, size = 1.1) +
+  coord_equal() +
+  labs(color = "priceRange",
+       title = "ROC: XGBoost multi-class 3nd Tune",
+       subtitle = paste("AUC =", auc4$.estimate )) +
+  theme(legend.position = c(0.8, 0.3),
+        legend.background = element_rect(fill = "black"))
+
+(roc1 + roc2) / ( roc3 + roc4)
+```
+
+## Batch Inference on Holdout Data
+
+First, let's refit the best tuned models on the training + validation data. 
+
+After refitting, we need to submit probabilities of every `priceRange` bin for each observation (home). There are 5 possible price bins:
+`0-250000`, `250000-350000`, `350000-450000`, `450000-650000`, `650000+`
+So we'll need to submit a .cvs file containing the holdout id column + 5 price columns containing our predicted probabilities. To run inference we'll pass our "baked" holdout data into our best performing XGboost model.
+
+```{r index-65}
+best_model_spec1 <- "austin-xgb-2021-08-24-19-26-01-087-8bf5c7e6" # with high/low word features
+#best_model_spec2 <- "austin-xgb-2021-08-24-16-05-39-168-ba9e4034" # without high/low words
+```
+
+Set the hyperparameters found in our best model. Search for model in SageMaker/Inference/Models and you'll find the hyperparameters within the model file.
+```{r index-66}
+# hyperparameters for "austin-xgb-2021-08-24-19-26-01-087-8bf5c7e6" 
+xgb_estimator$set_hyperparameters(objective        = "multi:softprob",
+                                  eval_metric      = "mlogloss",
+                                  num_class        = 5L, # necessary for multiclass
+                                  max_depth        = 6L, 
+                                  eta              = 0.03520118545875153,
+                                  num_round        = 547L,
+                                  colsample_bytree = 0.6290542489323581,
+                                  alpha            = 1L,
+                                  min_child_weight = 1.1877495749360136,
+                                  subsample        = 0.8303568755778328,
+                                  gamma            = 0.037136763001608175)
+```
+Refit model on train + validation data before predicting on holdout data. 
+```{r index-67, eval=FALSE}
+# Create training job name based project organization principles
+algo <- "xgb"    # keep short
+timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S") # timestamp
+job_name_refit <- paste(project, algo, timestamp, sep = "-")
+s3_train_input <- sagemaker$inputs$TrainingInput(s3_data = s3_tr_val,     # train + validation
+                                                 content_type = 'csv')
+s3_valid_input <- sagemaker$inputs$TrainingInput(s3_data = s3_test_full,  # test set w/ truth
+                                                 content_type = 'csv')
+input_data <- list('train'      = s3_train_input,
+                   'validation' = s3_valid_input) 
+```
+
+```{r index-68 eval=FALSE}
+xgb_estimator$fit(inputs   = input_data,
+                  job_name = job_name_refit,
+                  wait     = FALSE)
+```
+
+Our refit model name is `austin-xgb-2021-08-24-22-07-41`.
+```{r index-69 }
+training_job_stats_refit <- session$describe_training_job(job_name = "austin-xgb-2021-08-24-22-07-41")
+
+final_metrics_refit <-  map_df(training_job_stats_refit$FinalMetricDataList, 
+                               ~tibble(metric_name = .x[["MetricName"]],
+                                       value = .x[["Value"]]))
+training_job_stats_refit$TrainingJobName
+```
+
+```{r index-70}
+final_metrics_refit
+```
+
+```{r index-71 }
+predictions_path_h <- paste0(models_path, "/", "austin-xgb-2021-08-24-22-07-41", "/predictions") 
+
+session$create_model_from_job("austin-xgb-2021-08-24-22-07-41")
+
+xgb_batch_predictor_h <- sagemaker$transformer$Transformer(model_name     = "austin-xgb-2021-08-24-22-07-41",
+                                                           instance_count = 1L, 
+                                                           instance_type  = "ml.m5.4xlarge", 
+                                                           strategy       = "MultiRecord",  
+                                                           assemble_with  = "Line",
+                                                           output_path    = predictions_path_h)
+```
+
+Run batch inference on holdout data. Make job_name unique with an added `-h` for holdout. 
+```{r index-72 }
+xgb_batch_predictor_h$transform(data         = s3_holdout, # data to predict on for Kaggle comp.
+                                content_type = 'text/csv',
+                                split_type   = "Line",
+                                job_name     = "austin-xgb-2021-08-24-22-07-41-h",
+                                wait         = FALSE)
+```
+
+Transform to format data for submission to Kaggle. 
+```{r index-73 }
+s3_holdout_predictions_path_h <- s3_downloader$list(predictions_path_h)
+
+s3_downloader$download(s3_holdout_predictions_path_h, "./predictions")
+ 
+holdout_predictions_h <- read_csv("./predictions/austin_holdout.csv.out",
+                                  col_names = FALSE) #%>% pull(X1)
+
+holdout_predictions_h.1 <- holdout_predictions_h %>%
+                           transmute("0-250000"      = X1,
+                                     "250000-350000" = X2,
+                                     "350000-450000" = X3,
+                                     "450000-650000" = X4,
+                                     "650000+"       = X5 )
+ 
+# Remove brackets
+holdout_predictions_h.1$`0-250000` <- as.numeric(str_replace_all(holdout_predictions_h.1$`0-250000`,"\\[|\\]", ""))
+holdout_predictions_h.1$`650000+` <- as.numeric(str_replace_all(holdout_predictions_h.1$`650000+`,"\\[|\\]", "")) 
+
+austin_holdout_id <- read_csv("data/austin_holdout_id.csv", col_names = FALSE) %>% 
+                     rename(uid = X1)
+chop_submit_final <- bind_cols(austin_holdout_id, holdout_predictions_h.1)
+```
+
+```{r index-74}
+write_csv(chop_submit_final, "predictions/chop_submit_final.csv")
+```
+
+This submission received a score of 0.88876 (Multiclass Log Loss), which would have placed 6th out of 90 entries in the Kaggle competition. 
+
+To understand how this XGBoost model predicted `priceRange`, we can use SHapley Additive exPlanations (**SHAP**) to visualize feature importance for every observation, and how those features impacted the probabilities of each `priceRange` category.  SHAP is a method to interpret results from tree-based models, and can prevent your XGBoost model from falling into `Black Box` territory, where you cannot explain how the model works.
+
+I had to adjust the `{SHAPforxgboost}` R package slightly to work for multi-class XGBoost predictions. First, rebuild the model using the `{xgboost}` R package and the model hyperparameters.
+
+```{r index-75.1 }
+library(SHAPforxgboost)
+library(xgboost)
+
+lb <- as.numeric(austin_training$priceRange) -1   # to get priceRange categories 0:4
+X_train <- as.matrix(austin_training[, -1])       # remove priceRange from matrix
+
+bst <- xgboost(data             = X_train, 
+               label            = lb,
+               objective        = "multi:softprob", 
+               eval_metric      = "mlogloss",
+               max_depth        = 6, 
+               eta              = 0.03520118545875153, 
+               nthread          = 2, 
+               nrounds          = 547, 
+               subsample        = 0.8303568755778328,
+               num_class        = 5,
+               gamma            = 0.037136763001608175,
+               colsample_bytree = 0.6290542489323581,
+               min_child_weight = 1.1877495749360136)
+```
+```{r index-75.2 }
+# predict for softmax returns num_class probability numbers per case:
+pred_labels1 <- predict(bst, as.matrix(austin_training[, -1]))
+pred_labels2 <- matrix(pred_labels1, ncol=5, byrow=TRUE)
+# convert the probabilities to softmax labels
+pred_labels3 <- max.col(pred_labels2) - 1
+#head(pred_labels2, n = 4)
+#head(pred_labels3, n = 4)
+```
+```{r index-75.3 }
+pred <- predict(bst, as.matrix(austin_training[, -1]), predcontrib = TRUE)
+```
+
+As of now `{SHAPforxgboost}` can't handle multiclass predictions. Unnesting `pred` and a small adjustment to the `shap.values()` function allows SHAP values for each category.
+```{r index-75.4 }
+shap_contrib_0 <- pred[[1]]
+shap_contrib_1 <- pred[[2]]
+shap_contrib_2 <- pred[[3]]
+shap_contrib_3 <- pred[[4]]
+shap_contrib_4 <- pred[[5]]
+```
+
+New `shap.values()` function.
+```{r index-76}
+shap.values_todd <- function(shap_contrib, X_train){
+
+  # Add colnames if not already there (required for LightGBM)
+  if (is.null(colnames(shap_contrib))) {
+    colnames(shap_contrib) <- c(colnames(X_train), "BIAS")
+  }
+
+  shap_contrib <- as.data.table(shap_contrib)
+
+  # For both XGBoost and LightGBM, the baseline value is kept in the last column
+  BIAS0 <- shap_contrib[, ncol(shap_contrib), with = FALSE][1]
+
+  # Remove baseline and ensure the shap matrix has column names
+  shap_contrib[, `:=`(BIAS, NULL)]
+
+  # Make SHAP score in decreasing order
+  imp <- colMeans(abs(shap_contrib))
+  mean_shap_score <- imp[order(imp, decreasing = T)]
+
+  return(list(shap_score = shap_contrib,
+              mean_shap_score = mean_shap_score,
+              BIAS0 = BIAS0))
+}
+```
+```{r index-77}
+shap_values_0 <- shap.values_todd(shap_contrib = shap_contrib_0, X_train)
+shap_values_1 <- shap.values_todd(shap_contrib = shap_contrib_1, X_train)
+shap_values_2 <- shap.values_todd(shap_contrib = shap_contrib_2, X_train)
+shap_values_3 <- shap.values_todd(shap_contrib = shap_contrib_3, X_train)
+shap_values_4 <- shap.values_todd(shap_contrib = shap_contrib_4, X_train)
+
+shap_long_0 <- shap.prep(shap_contrib = shap_values_0$shap_score, X_train)
+shap_long_1 <- shap.prep(shap_contrib = shap_values_1$shap_score, X_train)
+shap_long_2 <- shap.prep(shap_contrib = shap_values_2$shap_score, X_train)
+shap_long_3 <- shap.prep(shap_contrib = shap_values_3$shap_score, X_train)
+shap_long_4 <- shap.prep(shap_contrib = shap_values_4$shap_score, X_train)
+```
+
+Use the `shap_long` values to build SHAP Summary Plots showing global feature importance.
+```{r index-78}
+sh_pl_0 <-  shap.plot.summary(shap_long_0) +
+            ggdark::dark_theme_minimal() +
+            theme(legend.position = 'bottom') +
+            labs(title = "SHAP Values for Features in XGBoost Model",
+                 subtitle = "Homes Predicted to be $0 - $250,000")
+sh_pl_1 <-  shap.plot.summary(shap_long_1) +
+            ggdark::dark_theme_minimal() +
+            theme(legend.position = 'bottom') +
+            labs(title = "SHAP Values for Features in XGBoost Model",
+                 subtitle = "Homes Predicted to be $250,000 - $350,000")
+sh_pl_2 <-  shap.plot.summary(shap_long_2) +
+            ggdark::dark_theme_minimal() +
+            theme(legend.position = 'bottom') +
+            labs(title = "SHAP Values for Features in XGBoost Model",
+                 subtitle = "Homes Predicted to be $350,000 - $450,000")
+sh_pl_3 <-  shap.plot.summary(shap_long_3) +
+            ggdark::dark_theme_minimal() +
+            theme(legend.position = 'bottom') +
+            labs(title = "SHAP Values for Features in XGBoost Model",
+                 subtitle = "Homes Predicted to be $450,000 - $650,000")
+sh_pl_4 <-  shap.plot.summary(shap_long_4) +
+            ggdark::dark_theme_minimal() +
+            theme(legend.position = 'bottom') +
+            labs(title = "SHAP Values for Features in XGBoost Model",
+                 subtitle = "Homes Predicted to be $650,000+")
+```
+
+```{r index-79, fig.height=25, fig.width=10}
+#library(patchwork)
+sh_pl_0 / sh_pl_1 / sh_pl_2 / sh_pl_3 / sh_pl_4
+```
+
+The SHAP summary plots above combine feature importance with feature effects. Each point on the summary plot is a Shapley value for an individual observation's feature. The position on the y-axis is determined by the feature importance within that `priceRange`. 
+
+Notice feature importance values in the `$650,000` plot (5th plot) are highest among the `priceRange` categories and the `$350,000 - $450,000` plot (3rd plot) are lowest. That means our XGBoost model is better at predicting the most expensive homes and relatively poor at predicting middle priced homes. The model even predicts `$0-$250,000` homes well considering there are fewest observations of that `priceRange`
+
+```{r index-79.2}
+# Count of homes per priceRange category.  0 = $0-$250,000    4 = $650,000
+table(austin_training$priceRange)
+```
+
+The color represents the relative value of the feature to the observation. 
+
+Deep purple points with POSITIVE SHAP Values (right of 0) are feature values that strongly influence XGBoost to POSITIVELY classify the observation into THAT `priceRange` bin. 
+
+Deep purple points with NEGATIVE SHAP Values (left of 0) are feature values that strongly influence XGBoost to NOT POSITIVELY classify the observation into THAT `priceRange` bin.   
+
+Each feature gets it's own yellow-purple scale (can't compare purple points of different features). 
+
+Different observations with the same feature value can have very different SHAPley values. For example, we might see a dark purple point and a bright yellow point in `numofBedrooms` feature for two homes that each have `numofBedrooms` = 3. Imagine a suburban home with 3 bedrooms being priced slightly more than a suburban 2 bedroom home. A downtown apartment, however, with 3 bedrooms might be 2X the price of a 2 bedroom downtown apartment. Therefore, the feature value (color) for `numofBedrooms` will be  higher for the apartment observation. 
+
+Look at `high_price_words` and `low_price_words` in the `$0-$250,000` SHAP summary plot. Observations with `low_price_words` in the `$0-$250,000` plot are always purple and positive, influencing XGBoost to say YES, classify me as `$0-$250,000`. Observations with `high_price_words` are purple and negative, saying NO, don't classify me as `$0-$250,000`. The opposite pattern is seen with high/low words in the `$640,000` plot.  
+
+The color scale for `lotSizeSqft` is messed up due to outliers.
+```{r index-79.3}
+austin_training %>% arrange(desc(lotSizeSqFt)) %>% head(n=50) %>% select(priceRange, lotSizeSqFt)
+```
+`lotSizeSqFt` range is fairly linear until the largest 9 observations. Because these 9 observations do not associate with `priceRange`, we might consider a rule removing any observation above 400,000 SqFt. These might be typos or a large empty stretch of private land. Must dig deeper into these 9 observations to adjust our model recipe.    
+
+The last plots are SHAP Force Plots which clusters (ward.D2) similar observations and stacks SHAP values for each observation. These show how the final output was obtained as a sum of each predictor’s attributions. 
+
+Think of these plots as the algorithm summing up an observations feature values to determine whether to classify into this `priceRange` bin. I'll show code for just one of the plots. 
+```{r index-80, fig.height=6, fig.width=10}
+shap_force_plot4 <- shap.prep.stack.data(shap_contrib = shap_values_4$shap_score, 
+                                        top_n = 4, n_groups = 5)
 # you may choose to zoom in at a location, and set y-axis limit using `y_parent_limit`  
-shap.plot.force_plot(shap_force_plot, zoom_in_group = 5, y_parent_limit = c(-2.2,2.2)) +
+shap.plot.force_plot(shap_force_plot4, zoom_in = FALSE) +
   ggdark::dark_theme_bw() +
-  labs(title = "SHAP Force Plot",
-       subtitle = "Shows feature contribution to XGBoost prediction at each observation")
-
+  labs(title = "SHAP Force Plot;  $650,000+",
+       subtitle = "Stacked SHAP values for each observation contribute to XGBoost assigning probability of this priceRange.")
 ```
-```{r fig.height=10, fig.width=10}
+
+```{r index-81, echo=FALSE, fig.height=6, fig.width=10}
+shap_force_plot3 <- shap.prep.stack.data(shap_contrib = shap_values_3$shap_score, 
+                                        top_n = 4, n_groups = 5)
+# you may choose to zoom in at a location, and set y-axis limit using `y_parent_limit`  
+shap.plot.force_plot(shap_force_plot3, zoom_in = FALSE) +
+  ggdark::dark_theme_bw() +
+  labs(title = "SHAP Force Plot; $450,000 - $650,000",
+       subtitle = "Stacked SHAP values for each observation contribute to XGBoost assigning probability of this priceRange.")
+```
+
+```{r index-82, echo=FALSE, fig.height=6, fig.width=10}
+shap_force_plot2 <- shap.prep.stack.data(shap_contrib = shap_values_2$shap_score, 
+                                        top_n = 4, n_groups = 5)
+# you may choose to zoom in at a location, and set y-axis limit using `y_parent_limit`  
+shap.plot.force_plot(shap_force_plot2, zoom_in = FALSE) +
+  ggdark::dark_theme_bw() +
+  labs(title = "SHAP Force Plot; $350,000 - $450,000",
+       subtitle = "Stacked SHAP values for each observation contribute to XGBoost assigning probability of this priceRange.")
+```
+
+```{r index-83, echo=FALSE, fig.height=6, fig.width=10}
+shap_force_plot1 <- shap.prep.stack.data(shap_contrib = shap_values_1$shap_score, 
+                                        top_n = 4, n_groups = 5)
+# you may choose to zoom in at a location, and set y-axis limit using `y_parent_limit`  
+shap.plot.force_plot(shap_force_plot1, zoom_in = FALSE) +
+  ggdark::dark_theme_bw() +
+  labs(title = "SHAP Force Plot; $250,000 - $350,000",
+       subtitle = "Stacked SHAP values for each observation contribute to XGBoost assigning probability of this priceRange.")
+```
+
+```{r index-84, echo=FALSE, fig.height=6, fig.width=10}
+shap_force_plot0 <- shap.prep.stack.data(shap_contrib = shap_values_0$shap_score, 
+                                        top_n = 4, n_groups = 5)
+# you may choose to zoom in at a location, and set y-axis limit using `y_parent_limit`  
+shap.plot.force_plot(shap_force_plot0, zoom_in = FALSE) +
+  ggdark::dark_theme_bw() +
+  labs(title = "SHAP Force Plot; $0 - $250,000",
+       subtitle = "Stacked SHAP values for each observation contribute to XGBoost assigning probability of this priceRange.")
+```
+
+```{r index-85, include=FALSE fig.height=6, fig.width=10}
+shap_force_plot4 <- shap.prep.stack.data(shap_contrib = shap_values_4$shap_score, 
+                                        top_n = 4, n_groups = 5)
+# you may choose to zoom in at a location, and set y-axis limit using `y_parent_limit`  
+shap.plot.force_plot(shap_force_plot4, zoom_in_group = 1, y_parent_limit = c(-5.2,5.0)) +
+  ggdark::dark_theme_bw() +
+  labs(title = "SHAP Force Plot;  $650,000+",
+       subtitle = "Stacked SHAP values for each observation contribute to XGBoost assigning probability of this priceRange.")
+```
+
+```{r index-86, include=FALSE, fig.height=10, fig.width=10}
 shap.plot.force_plot_bygroup(shap_force_plot) +
   ggdark::dark_theme_bw() +
   labs(title = "SHAP Force Plot Clusters - Austin Neighborhoods?")
 ```
-```{r}
-best_tuned_model
-```
 
-```{r chunk49, eval=FALSE}
-boto_client <- session$boto_session$client("sagemaker")
-austin_model <- boto_client$list_models()[["Models"]] %>% 
-  map_chr("ModelName") %>% 
-  .[[1]]
-```
+## Summary
 
-```{r chunk49.2}
-austin_model
-```
-
-```{r}
-```
-
-
-## Batch Inference on Holdout Data
-
-We needed to submit probabilities of every `priceRange` bin for each observation (home). There are 5 possible price bins:
-`0-250000`, `250000-350000`, `350000-450000`, `450000-650000`, `650000+`
-So we'll need to submit a .cvs file containing the holdout id column + 5 price columns containing our predicted probabilities. To run inference we'll pass our "baked" holdout data into our best performing XGboost model.  
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
-
-
-
-
-
-```{r}
-xgb_spec <- 
-  boost_tree(trees = 1000, 
-             tree_depth = tune(),
-             min_n = tune(),
-             mtry = tune(),
-             sample_size = tune(),
-             learn_rate = tune()) %>%
-  set_engine("xgboost") %>%
-  set_mode("classification")
-
-xgb_word_wf <- workflow(austin_rec, xgb_spec)
-
-set.seed(123)
-xgb_grid <-
-  grid_max_entropy(
-    tree_depth(c(5L, 10L)),
-    min_n(c(10L, 40L)),
-    mtry(c(5L, 10L)),
-    sample_prop(c(0.5, 1.0)),
-    learn_rate(c(-2, -1)),
-    size = 20
-  )
-
-xgb_grid
-```
-
-Now we can tune across the grid of parameters and our resamples. Since we are trying
-quite a lot of hyperparameter combinations, let's use
-[racing](https://juliasilge.com/blog/baseball-racing/) to quit early on clearly bad
-hyperparameter combinations.
-
-```{r}
-library(finetune)
-doParallel::registerDoParallel()
-
-set.seed(234)
-xgb_word_rs <- 
-  tune_race_anova(
-    xgb_word_wf,
-    austin_folds,
-    grid = xgb_grid,
-    metrics = metric_set(mn_log_loss),
-    control = control_race(verbose_elim = TRUE)
-  )
-
-xgb_word_rs
-```
-
-That takes a little while but we did it!
-
-## Evaluate results
-
-First off, how did the "race" go?
-
-```{r}
-plot_race(xgb_word_rs)
-```
-
-We can look at the top results manually as well.
-
-```{r}
-show_best(xgb_word_rs)
-```
-
-Let's use `last_fit()` to fit one final time to the **training** data and evaluate
-one final time on the **testing** data, with the numerically optimal result from
-`xgb_word_rs`.
-
-```{r}
-xgb_last <- 
-  xgb_word_wf %>%
-  finalize_workflow(select_best(xgb_word_rs, "mn_log_loss")) %>%
-  last_fit(austin_split)
-
-xgb_last
-```
-
-How did this model perform on the testing data, that was not used in tuning/training?
-
-```{r}
-collect_predictions(xgb_last) %>%
-    mn_log_loss(priceRange, `.pred_0-250000`:`.pred_650000+`)
-```
-
-This result is pretty good for a single (not ensembled) model and is a wee bit better
-than what I did during the SLICED competition. I had an R bomb right as I was
-finishing up tuning a model just like the one I am demonstrating here!
-
-How does this model perform across the different classes?
-
-```{r}
-collect_predictions(xgb_last) %>%
-    conf_mat(priceRange, .pred_class) %>%
-    autoplot()
-```
-
-We can also visualize this with an ROC curve.
-
-```{r}
-collect_predictions(xgb_last) %>%
-    roc_curve(priceRange,  `.pred_0-250000`:`.pred_650000+`) %>%
-    ggplot(aes(1 - specificity, sensitivity, color = .level)) +
-    geom_abline(lty = 2, color = "gray80", size = 1.5) +
-    geom_path(alpha = 0.8, size = 1.2) +
-    coord_equal() +
-    labs(color = NULL)
-```
-
-Notice that it is easier to identify the most expensive homes but more difficult to
-correctly classify the less expensive homes.
-
-What features are most important for this xgboost model?
-
-```{r}
-library(vip)
-extract_workflow(xgb_last) %>%
-    extract_fit_parsnip() %>%
-    vip(geom = "point", num_features = 15)
-```
-
-The spatial information in latitude/longitude are by far the most important. Notice
-that the model uses `low_price_words` more than it uses, for example, whether there
-is a spa or whether it is a single family home (as opposed to a townhome or condo).
-It looks like the model is trying to distinguish some of those lower priced
-categories. The model does *not* really use the `high_price_words` variable, perhaps
-because it is already easy to find the expensive houses.
-
-The two finalists from SLICED go on to compete next Tuesday, which should be fun and
-interesting to watch! I have enjoyed the opportunity to participate this season.
+In this post I used a Kaggle dataset for Austin, TX real estate and predict homes into one of 5 `priceRange` bins. I performed exploratory data analysis in R, leaning heavily on geospacial tools like `{ggmaps}`, `{leaflet}` for interactive plotting, and `{ggplot2}` for distribution hex plots to visualize features across Austin. I performed natural language processing (NLP) on the `description` feature to produce high and low values words that associate with home price. I then connected RStudio to AWS SageMaker to gain access to it's built-in XGBoost, S3, and EC2 instances for modeling. After training and tuning XGBoost to find the best multi-class model, I ran batch inference on Kaggle holdout data and predicted `priceRange` probabilites for 4,961 Austin homes. I submitted those predictions to the [SLICED](https://www.kaggle.com/c/sliced-s01e11-semifinals) Kaggle Competition which scored 0.88876 (Multiclass Log Loss) which would have been good enough for 6th place (out of 90 entries). Finally, I replicate that XGBoost model in R with `{xgboost}` and build a set of multi-class XGBoost SHAP plots to better understand how the XGBoost model classified observations, based on feature importance, relative feature impact, and clustering of observations by SHAPley values. 
