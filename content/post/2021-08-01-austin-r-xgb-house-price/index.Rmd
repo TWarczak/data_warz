@@ -26,7 +26,7 @@ tags:
   - Geospacial
 subtitle: 'Interpretable XGBoost with {ggmaps}, Leaflet Interactive Plots, and SHapley Additive exPlanations (SHAP)'
 summary: "In this post I explore an Austin Housing dataset and predict binned housing price. EDA includes static and interactive geospacial feature maps and feature engineering using natural language processing (NLP). In my RStudio I utilize a conda environment to access SageMaker's XGBoost, S3, and EC2 for distributed computing. After model training/tuning/evaluation, I run batch inference with the best performing model to predict the price of Austin houses from holdout data. I then submit predictions to the Kaggle competition. Multiclass Log Loss was the evaluation algorithm and my submission scored 0.8876 (lower is better), which would have placed 6th in the live competition. After submission, I run SHapley Additive exPlanations (SHAP) to understand what the XGBoost model considered important features and how it clustered similar observations."
-featured: no
+featured: "featured-austin.png"
 image:
   caption: ''
   focal_point: ''
