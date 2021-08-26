@@ -26,6 +26,10 @@ In this post I explore an Austin Housing dataset and predict binned housing pric
 
 ***
 
+![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-43-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-43-1.png)
+
+***
+
 ![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-80-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-80-1.png)
 
 ***
