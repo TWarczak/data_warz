@@ -88,7 +88,7 @@ near highways, airports, etc? Downtown vs. suburbs?
 
 We can use the `{leaflet}` package to build interactive maps overlayed
 with our data. Unfortunately, these plots do not render in markdown
-files, so I’be provided screenshots. Zooming into different
+files, so I’ve provided screenshots. Zooming into different
 neighborhoods can quickly help you understand the real estate scene in
 Austin.
 
