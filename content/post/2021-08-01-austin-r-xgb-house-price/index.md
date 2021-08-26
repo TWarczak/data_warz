@@ -277,9 +277,7 @@ bins or **decreasing** across `priceRange` bins.
     ## 10 car      <tibble [5 × 4]> priceRange 0.000000778 0.000000166       4.69 2.67e- 6   1.52e- 4
     ## # … with 90 more rows
 
-These are the words that we’d like to try to detect and use in feature
-engineering for our xgboost model, rather than using all the text tokens
-as features individually.
+These are the words we want to detect and use as a feature for our xgboost model, rather than using all the text tokens as features individually.
 
     higher_words <-
       word_mods %>%

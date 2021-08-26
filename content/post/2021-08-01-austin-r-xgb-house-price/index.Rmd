@@ -92,7 +92,7 @@ airports, etc? Downtown vs. suburbs?
 
 ## EDA
 
-We can use the `{leaflet}` package to build interactive maps overlayed with our data. Unfortunately, these plots do not render in markdown files, so I'be provided screenshots. Zooming into different neighborhoods can quickly help you understand the real estate scene in Austin.
+We can use the `{leaflet}` package to build interactive maps overlayed with our data. Unfortunately, these plots do not render in markdown files, so I've provided screenshots. Zooming into different neighborhoods can quickly help you understand the real estate scene in Austin.
 
 ```{r index-2}
 q <- train_raw %>%
@@ -243,9 +243,7 @@ word_mods <-
 word_mods
 ```
 
-These are the words that we'd like to try to detect and use in feature engineering
-for our xgboost model, rather than using all the text tokens as features
-individually.
+These are the words we want to detect and use as a feature for our xgboost model, rather than using all the text tokens as features individually.
 
 ```{r index-9}
 higher_words <-
