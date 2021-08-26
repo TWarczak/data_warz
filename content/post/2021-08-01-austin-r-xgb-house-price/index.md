@@ -1,5 +1,5 @@
 ---
-title: "SageMaker + RStudio to Predict Home Prices w/ Multi-class XGBoost; Explaining Model Behavior with Geospacial Plots and SHAP."
+title: "SageMaker + RStudio to Predict Home Prices w/ Multi-class XGBoost; Explaining Model Behavior with Geospacial Plots and SHAP"
 author: Todd Warczak
 date: '2021-08-19'
 slug: XGB-Multi-Class
