@@ -11,6 +11,7 @@ categories:
   - SageMaker
   - XGBoost
   - R
+  - NLP
   - SHAP
   - Geospacial 
 tags:

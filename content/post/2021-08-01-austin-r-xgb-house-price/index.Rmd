@@ -10,6 +10,7 @@ categories:
   - AWS
   - SageMaker
   - XGBoost
+  - NLP
   - R
   - SHAP
   - Geospacial 
