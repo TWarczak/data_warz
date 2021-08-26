@@ -10,26 +10,26 @@ In this post I explore an Austin Housing dataset and predict binned housing pric
 
 ***
 
-![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index3-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index3-1.png)
+![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-3-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-3-1.png)
 
 ***
 
-![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index10-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index10-1.png)
+![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-10-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-10-1.png)
 
 ***
 
-![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index35-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index35-1.png)
+![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-35-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-35-1.png)
 
 ***
 
-![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index42-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index42-1.png)
+![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-42-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-42-1.png)
 
 ***
 
-![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index80-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index80-1.png)
+![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-80-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-80-1.png)
 
 ***
 
-![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index79-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index79-1.png)
+![.content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-79-1.png](https://raw.githubusercontent.com/TWarczak/data_warz/master/content/post/2021-08-01-austin-r-xgb-house-price/index_files/figure-markdown_strict/index-79-1.png)
 
 ***
