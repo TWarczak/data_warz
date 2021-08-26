@@ -10,8 +10,8 @@ categories:
   - AWS
   - SageMaker
   - XGBoost
-  - R
   - NLP
+  - R
   - SHAP
   - Geospacial 
 tags:
@@ -67,19 +67,23 @@ in.
     holdout <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-austin-r-xgb-house-price/test.csv")
     names(train_raw)
 
-    ##  [1] "uid"                        "city"                       "description"               
-    ##  [4] "homeType"                   "latitude"                   "longitude"                 
-    ##  [7] "garageSpaces"               "hasSpa"                     "yearBuilt"                 
-    ## [10] "numOfPatioAndPorchFeatures" "lotSizeSqFt"                "avgSchoolRating"           
-    ## [13] "MedianStudentsPerTeacher"   "numOfBathrooms"             "numOfBedrooms"             
-    ## [16] "priceRange"
+    ##  [1] "uid"                        "city"                      
+    ##  [3] "description"                "homeType"                  
+    ##  [5] "latitude"                   "longitude"                 
+    ##  [7] "garageSpaces"               "hasSpa"                    
+    ##  [9] "yearBuilt"                  "numOfPatioAndPorchFeatures"
+    ## [11] "lotSizeSqFt"                "avgSchoolRating"           
+    ## [13] "MedianStudentsPerTeacher"   "numOfBathrooms"            
+    ## [15] "numOfBedrooms"              "priceRange"
 
     #names(holdout) # lacks priceRange
     table(train_raw$priceRange)
 
     ## 
-    ##      0-250000 250000-350000 350000-450000 450000-650000       650000+ 
-    ##          1249          2356          2301          2275          1819
+    ##      0-250000 250000-350000 350000-450000 450000-650000 
+    ##          1249          2356          2301          2275 
+    ##       650000+ 
+    ##          1819
 
 Are Austin house prices clustered by neighborhoods? Do prices change
 near highways, airports, etc? Downtown vs. suburbs?
@@ -263,21 +267,23 @@ bins or **decreasing** across `priceRange` bins.
     word_mods
 
     ## # A tibble: 100 × 8
-    ##    word     data             term          estimate    std.error statistic  p.value adj.pvalue
-    ##    <chr>    <list>           <chr>            <dbl>        <dbl>     <dbl>    <dbl>      <dbl>
-    ##  1 outdoor  <tibble [5 × 4]> priceRange 0.00000325  0.000000185      17.6  4.41e-69   4.37e-67
-    ##  2 custom   <tibble [5 × 4]> priceRange 0.00000214  0.000000147      14.6  4.14e-48   3.98e-46
-    ##  3 pool     <tibble [5 × 4]> priceRange 0.00000159  0.000000122      13.0  6.52e-39   6.12e-37
-    ##  4 office   <tibble [5 × 4]> priceRange 0.00000150  0.000000146      10.3  6.85e-25   6.03e-23
-    ##  5 suite    <tibble [5 × 4]> priceRange 0.00000143  0.000000139      10.3  4.53e-25   4.03e-23
-    ##  6 gorgeous <tibble [5 × 4]> priceRange 0.000000975 0.000000162       6.02 1.73e- 9   1.19e- 7
-    ##  7 w        <tibble [5 × 4]> priceRange 0.000000920 0.0000000905     10.2  2.74e-24   2.33e-22
-    ##  8 windows  <tibble [5 × 4]> priceRange 0.000000890 0.000000128       6.95 3.75e-12   2.81e-10
-    ##  9 private  <tibble [5 × 4]> priceRange 0.000000889 0.000000115       7.70 1.35e-14   1.08e-12
-    ## 10 car      <tibble [5 × 4]> priceRange 0.000000778 0.000000166       4.69 2.67e- 6   1.52e- 4
-    ## # … with 90 more rows
+    ##    word     data     term    estimate std.error statistic  p.value
+    ##    <chr>    <list>   <chr>      <dbl>     <dbl>     <dbl>    <dbl>
+    ##  1 outdoor  <tibble… priceR…  3.25e-6   1.85e-7     17.6  4.41e-69
+    ##  2 custom   <tibble… priceR…  2.14e-6   1.47e-7     14.6  4.14e-48
+    ##  3 pool     <tibble… priceR…  1.59e-6   1.22e-7     13.0  6.52e-39
+    ##  4 office   <tibble… priceR…  1.50e-6   1.46e-7     10.3  6.85e-25
+    ##  5 suite    <tibble… priceR…  1.43e-6   1.39e-7     10.3  4.53e-25
+    ##  6 gorgeous <tibble… priceR…  9.75e-7   1.62e-7      6.02 1.73e- 9
+    ##  7 w        <tibble… priceR…  9.20e-7   9.05e-8     10.2  2.74e-24
+    ##  8 windows  <tibble… priceR…  8.90e-7   1.28e-7      6.95 3.75e-12
+    ##  9 private  <tibble… priceR…  8.89e-7   1.15e-7      7.70 1.35e-14
+    ## 10 car      <tibble… priceR…  7.78e-7   1.66e-7      4.69 2.67e- 6
+    ## # … with 90 more rows, and 1 more variable: adj.pvalue <dbl>
 
-These are the words we want to detect and use as a feature for our xgboost model, rather than using all the text tokens as features individually.
+These are the words we want to detect and use as a feature for our
+xgboost model, rather than using all the text tokens as features
+individually.
 
     higher_words <-
       word_mods %>%
@@ -291,8 +297,9 @@ These are the words we want to detect and use as a feature for our xgboost model
       slice_max(-estimate, n = 12) %>%
       pull(word)
 
-Let's plot how often the most significant words show up in the different `priceRange` bins. These are
-the words that most associate with price decrease and increase.
+Let’s plot how often the most significant words show up in the different
+`priceRange` bins. These are the words that most associate with price
+decrease and increase.
 
     high <- word_freqs %>% 
       filter(word %in% higher_words) %>%
@@ -624,14 +631,15 @@ contains the probability the observations can be classified in that
     head(test_results_1)
 
     ## # A tibble: 6 × 6
-    ##   Truth         `0-250000` `250000-350000` `350000-450000` `450000-650000` `650000+`
-    ##   <chr>              <dbl>           <dbl>           <dbl>           <dbl>     <dbl>
-    ## 1 650000+          0.0106          0.0134          0.0338           0.103     0.839 
-    ## 2 650000+          0.00567         0.00782         0.0120           0.0328    0.942 
-    ## 3 350000-450000    0.121           0.504           0.299            0.0580    0.0191
-    ## 4 350000-450000    0.0910          0.237           0.386            0.243     0.0436
-    ## 5 0-250000         0.343           0.487           0.118            0.0396    0.0125
-    ## 6 650000+          0.00542         0.00386         0.00664          0.0258    0.958
+    ##   Truth         `0-250000` `250000-350000` `350000-450000` `450000-650000`
+    ##   <chr>              <dbl>           <dbl>           <dbl>           <dbl>
+    ## 1 650000+          0.0106          0.0134          0.0338           0.103 
+    ## 2 650000+          0.00567         0.00782         0.0120           0.0328
+    ## 3 350000-450000    0.121           0.504           0.299            0.0580
+    ## 4 350000-450000    0.0910          0.237           0.386            0.243 
+    ## 5 0-250000         0.343           0.487           0.118            0.0396
+    ## 6 650000+          0.00542         0.00386         0.00664          0.0258
+    ## # … with 1 more variable: 650000+ <dbl>
 
 ### Confusion Matrix
 
@@ -753,12 +761,18 @@ These are our best performing models.
 
     tuning_results_df %>% arrange(FinalObjectiveValue) %>% select(FinalObjectiveValue, colsample_bytree:num_round) %>% head(n=5)
 
-    ##   FinalObjectiveValue colsample_bytree        eta      gamma max_depth min_child_weight num_round
-    ## 1             0.91389        0.6290542 0.03520119 0.03713676         6         1.187750       547
-    ## 2             0.91495        0.6071249 0.03396735 0.05022432         6         1.001407       531
-    ## 3             0.91541        0.5551431 0.03392736 0.06289694         6         1.007632       596
-    ## 4             0.91550        0.5551431 0.03512736 0.06289694         6         1.127632       602
-    ## 5             0.91558        0.6315542 0.03460119 0.03853227         6         1.127750       544
+    ##   FinalObjectiveValue colsample_bytree        eta      gamma
+    ## 1             0.91389        0.6290542 0.03520119 0.03713676
+    ## 2             0.91495        0.6071249 0.03396735 0.05022432
+    ## 3             0.91541        0.5551431 0.03392736 0.06289694
+    ## 4             0.91550        0.5551431 0.03512736 0.06289694
+    ## 5             0.91558        0.6315542 0.03460119 0.03853227
+    ##   max_depth min_child_weight num_round
+    ## 1         6         1.187750       547
+    ## 2         6         1.001407       531
+    ## 3         6         1.007632       596
+    ## 4         6         1.127632       602
+    ## 5         6         1.127750       544
 
 Plot a time series chart that shows how AUC developed over 250 training
 jobs, tuned by the Bayesian optimizer. Also plot the hyperparameters to
@@ -1071,6 +1085,26 @@ works.
 I had to adjust the `{SHAPforxgboost}` R package slightly to work for
 multi-class XGBoost predictions. First, rebuild the model using the
 `{xgboost}` R package and the model hyperparameters.
+
+    library(SHAPforxgboost)
+    library(xgboost)
+
+    lb <- as.numeric(austin_training$priceRange) -1   # to get priceRange categories 0:4
+    X_train <- as.matrix(austin_training[, -1])       # remove priceRange from matrix
+
+    bst <- xgboost(data             = X_train, 
+                   label            = lb,
+                   objective        = "multi:softprob", 
+                   eval_metric      = "mlogloss",
+                   max_depth        = 6, 
+                   eta              = 0.03520118545875153, 
+                   nthread          = 2, 
+                   nrounds          = 547, 
+                   subsample        = 0.8303568755778328,
+                   num_class        = 5,
+                   gamma            = 0.037136763001608175,
+                   colsample_bytree = 0.6290542489323581,
+                   min_child_weight = 1.1877495749360136)
 
     # predict for softmax returns num_class probability numbers per case:
     pred_labels1 <- predict(bst, as.matrix(austin_training[, -1]))

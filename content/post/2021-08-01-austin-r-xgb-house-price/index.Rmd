@@ -973,75 +973,75 @@ write_csv(austin_tr_val3,
 ```
 
 ```{r index-47, include=FALSE}
-s3_train3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_training3.csv", 
-                               desired_s3_uri = data_path)
-
-s3_validation3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_validation3.csv",
-                                    desired_s3_uri = data_path)
-
-s3_test3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test5.csv", 
-                              desired_s3_uri = data_path)
-
-s3_test3_full <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test_6.csv", 
-                              desired_s3_uri = data_path)
-
-s3_holdout3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout3.csv", 
-                              desired_s3_uri = data_path)
-
-s3_tr_val_3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_tr_val3.csv", 
-                              desired_s3_uri = data_path)
+# s3_train3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_training3.csv", 
+#                                desired_s3_uri = data_path)
+# 
+# s3_validation3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_validation3.csv",
+#                                     desired_s3_uri = data_path)
+# 
+# s3_test3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test5.csv", 
+#                               desired_s3_uri = data_path)
+# 
+# s3_test3_full <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_test_6.csv", 
+#                               desired_s3_uri = data_path)
+# 
+# s3_holdout3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_holdout3.csv", 
+#                               desired_s3_uri = data_path)
+# 
+# s3_tr_val_3 <- s3_uploader$upload(local_path = "../2021-08-01-austin-r-xgb-house-price/data/austin_tr_val3.csv", 
+#                               desired_s3_uri = data_path)
 ```
 
 ```{r index-48, include=FALSE}
-xgb_estimator3 <- sagemaker$estimator$Estimator(image_uri          = container,
-                                                role               = role_arn,
-                                                instance_count     = 1L,
-                                                instance_type      = "ml.m5.4xlarge", 
-                                                volume_size        = 50L, 
-                                                output_path        = models_path,
-                                                sagemaker_session  = session,
-                                                use_spot_instances = TRUE,
-                                                max_run            = 1800L,
-                                                max_wait           = 3600L)
-                                                #run 10 parallel jobs of m5.4xlarge
-
-xgb_estimator3$set_hyperparameters(objective        = "multi:softprob",
-                                   eval_metric      = "mlogloss",
-                                   num_class        = 5L,
-                                   alpha            = 1L ) 
+# xgb_estimator3 <- sagemaker$estimator$Estimator(image_uri          = container,
+#                                                 role               = role_arn,
+#                                                 instance_count     = 1L,
+#                                                 instance_type      = "ml.m5.4xlarge", 
+#                                                 volume_size        = 50L, 
+#                                                 output_path        = models_path,
+#                                                 sagemaker_session  = session,
+#                                                 use_spot_instances = TRUE,
+#                                                 max_run            = 1800L,
+#                                                 max_wait           = 3600L)
+#                                                 #run 10 parallel jobs of m5.4xlarge
+# 
+# xgb_estimator3$set_hyperparameters(objective        = "multi:softprob",
+#                                    eval_metric      = "mlogloss",
+#                                    num_class        = 5L,
+#                                    alpha            = 1L ) 
 ```
 
 ```{r index-49, include=FALSE}
-hyperp_ranges2 <- list(num_round = sagemaker$tuner$IntegerParameter(500L, 800L),
-                       max_depth = sagemaker$tuner$IntegerParameter(4L, 8L),
-              eta              = sagemaker$tuner$ContinuousParameter(0.01,0.07),
-              colsample_bytree = sagemaker$tuner$ContinuousParameter(0.5, 0.85),
-              min_child_weight = sagemaker$tuner$ContinuousParameter(1.0, 7.0),
-              subsample        = sagemaker$tuner$ContinuousParameter(0.5, 0.9),
-              gamma            = sagemaker$tuner$ContinuousParameter(0.01, 0.5))
-              #try gamma (0.01, 0.5, "Logarithmic") next time
+# hyperp_ranges2 <- list(num_round = sagemaker$tuner$IntegerParameter(500L, 800L),
+#                        max_depth = sagemaker$tuner$IntegerParameter(4L, 8L),
+#               eta              = sagemaker$tuner$ContinuousParameter(0.01,0.07),
+#               colsample_bytree = sagemaker$tuner$ContinuousParameter(0.5, 0.85),
+#               min_child_weight = sagemaker$tuner$ContinuousParameter(1.0, 7.0),
+#               subsample        = sagemaker$tuner$ContinuousParameter(0.5, 0.9),
+#               gamma            = sagemaker$tuner$ContinuousParameter(0.01, 0.5))
+#               #try gamma (0.01, 0.5, "Logarithmic") next time
 ```
 
 ```{r index-50, include=FALSE}
-tuner3 <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator3,
-                                             objective_metric_name = "validation:mlogloss",
-                                             objective_type        = "Minimize",
-                                             hyperparameter_ranges = hyperp_ranges2, 
-                                             strategy              = "Bayesian",
-                                             max_jobs              = 200L,
-                                             max_parallel_jobs     = 10L)
+# tuner3 <- sagemaker$tuner$HyperparameterTuner(estimator             = xgb_estimator3,
+#                                              objective_metric_name = "validation:mlogloss",
+#                                              objective_type        = "Minimize",
+#                                              hyperparameter_ranges = hyperp_ranges2, 
+#                                              strategy              = "Bayesian",
+#                                              max_jobs              = 200L,
+#                                              max_parallel_jobs     = 10L)
 ```
 
 ```{r index-51, include=FALSE}
-algo <- "xgb"
-timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
-job_name_tw1 <- paste(project, algo, timestamp, sep = "-")
-s3_train_input3 <- sagemaker$inputs$TrainingInput(s3_data = s3_train3,
-                                                  content_type = 'csv')
-s3_valid_input3 <- sagemaker$inputs$TrainingInput(s3_data = s3_validation3,
-                                                  content_type = 'csv')
-input_data3 <- list('train'      = s3_train_input3,
-                    'validation' = s3_valid_input3)
+# algo <- "xgb"
+# timestamp <- format(Sys.time(), "%Y-%m-%d-%H-%M-%S")
+# job_name_tw1 <- paste(project, algo, timestamp, sep = "-")
+# s3_train_input3 <- sagemaker$inputs$TrainingInput(s3_data = s3_train3,
+#                                                   content_type = 'csv')
+# s3_valid_input3 <- sagemaker$inputs$TrainingInput(s3_data = s3_validation3,
+#                                                   content_type = 'csv')
+# input_data3 <- list('train'      = s3_train_input3,
+#                     'validation' = s3_valid_input3)
 ```
 
 ```{r index-52, include=FALSE}
@@ -1052,89 +1052,89 @@ input_data3 <- list('train'      = s3_train_input3,
 
 ```{r index-53, include=FALSE}
 # find the jobs names in aws services: sagemaker, training, hyperparameter tuning jobs
-tuning_job_results4 <- sagemaker$HyperparameterTuningJobAnalytics("austin-xgb-2021-08-24-16-05-39")
-tuning_results_df4 <- tuning_job_results4$dataframe()
+# tuning_job_results4 <- sagemaker$HyperparameterTuningJobAnalytics("austin-xgb-2021-08-24-16-05-39")
+# tuning_results_df4 <- tuning_job_results4$dataframe()
 ```
 
 ```{r index-54, include=FALSE}
-tuning_results_df4 %>% arrange(FinalObjectiveValue) %>% select(FinalObjectiveValue, everything())
+#tuning_results_df4 %>% arrange(FinalObjectiveValue) %>% select(FinalObjectiveValue, everything())
 ```
 
 ```{r index-55, include=FALSE}
-tune_plot10 <-ggplot(tuning_results_df4, aes(TrainingEndTime, FinalObjectiveValue)) +
-  geom_point() +
-  xlab("Time") +
-  ylab(tuning_job_results4$description()$TrainingJobDefinition$StaticHyperParameters$`_tuning_objective_metric`) +
-  ggtitle("Hyperparameter tuning mLogloss",  
-          "Progression over the period of all 200 training jobs") 
-
-tune_plot11 <- ggplot(tuning_results_df4, aes(num_round, max_depth)) +
-  geom_point(aes(color = FinalObjectiveValue)) +
-  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
-  ggtitle("Hyperparameter tuning mLogloss", 
-          "Using a Bayesian strategy") 
-
-tune_plot12 <-ggplot(tuning_results_df4, aes(eta, colsample_bytree)) +
-  geom_point(aes(color = FinalObjectiveValue)) +
-  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
-  ggtitle("Hyperparameter tuning mLogloss", 
-          "Using a Bayesian strategy") 
-
-tune_plot13 <-ggplot(tuning_results_df4, aes(min_child_weight, subsample)) +
-  geom_point(aes(color = FinalObjectiveValue)) +
-  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
-  ggtitle("Hyperparameter tuning mLogloss", 
-          "Using a Bayesian strategy") 
-
-tune_plot14 <-ggplot(tuning_results_df4, aes(gamma, eta)) +
-  geom_point(aes(color = FinalObjectiveValue)) +
-  scale_color_scico("mLogloss", palette = "roma", direction = 1) +
-  ggtitle("Hyperparameter tuning mLogloss", 
-          "Using a Bayesian strategy") 
+# tune_plot10 <-ggplot(tuning_results_df4, aes(TrainingEndTime, FinalObjectiveValue)) +
+#   geom_point() +
+#   xlab("Time") +
+#   ylab(tuning_job_results4$description()$TrainingJobDefinition$StaticHyperParameters$`_tuning_objective_metric`) +
+#   ggtitle("Hyperparameter tuning mLogloss",  
+#           "Progression over the period of all 200 training jobs") 
+# 
+# tune_plot11 <- ggplot(tuning_results_df4, aes(num_round, max_depth)) +
+#   geom_point(aes(color = FinalObjectiveValue)) +
+#   scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+#   ggtitle("Hyperparameter tuning mLogloss", 
+#           "Using a Bayesian strategy") 
+# 
+# tune_plot12 <-ggplot(tuning_results_df4, aes(eta, colsample_bytree)) +
+#   geom_point(aes(color = FinalObjectiveValue)) +
+#   scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+#   ggtitle("Hyperparameter tuning mLogloss", 
+#           "Using a Bayesian strategy") 
+# 
+# tune_plot13 <-ggplot(tuning_results_df4, aes(min_child_weight, subsample)) +
+#   geom_point(aes(color = FinalObjectiveValue)) +
+#   scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+#   ggtitle("Hyperparameter tuning mLogloss", 
+#           "Using a Bayesian strategy") 
+# 
+# tune_plot14 <-ggplot(tuning_results_df4, aes(gamma, eta)) +
+#   geom_point(aes(color = FinalObjectiveValue)) +
+#   scale_color_scico("mLogloss", palette = "roma", direction = 1) +
+#   ggtitle("Hyperparameter tuning mLogloss", 
+#           "Using a Bayesian strategy") 
 ```
 
 ```{r index-56, include=FALSE, fig.height=12, fig.width=12}
-(tune_plot5 + tune_plot6) / (tune_plot7 + tune_plot8) / (tune_plot9 + plot_spacer())
+#(tune_plot5 + tune_plot6) / (tune_plot7 + tune_plot8) / (tune_plot9 + plot_spacer())
 ```
 
 ```{r index-57, include=FALSE, fig.height=12, fig.width=12}
-(tune_plot10 + tune_plot11) / (tune_plot12 + tune_plot13) / (tune_plot14 + plot_spacer())
+#(tune_plot10 + tune_plot11) / (tune_plot12 + tune_plot13) / (tune_plot14 + plot_spacer())
 ```
 
 ```{r index-58, include=FALSE}
-best_5_tuned_models4 <- tuning_results_df4 %>%
-                    arrange(FinalObjectiveValue) %>% 
-                    head(n=5) 
-
-#unnest(best_10_tuned_models) %>% select(FinalObjectiveValue, everything())
-
-best_tuned_model4 <- tuning_results_df4 %>%
-                    arrange(FinalObjectiveValue) %>% 
-                    head(n=1) %>% pull(TrainingJobName)
-
-#best_tuned_model
-training_job_stats4 <- session$describe_training_job(job_name = best_tuned_model4)
-
-final_metrics_4 <-  map_df(training_job_stats4$FinalMetricDataList, 
-                           ~tibble(metric_name = .x[["MetricName"]],
-                                   value       = .x[["Value"]]))
+# best_5_tuned_models4 <- tuning_results_df4 %>%
+#                     arrange(FinalObjectiveValue) %>% 
+#                     head(n=5) 
+# 
+# #unnest(best_10_tuned_models) %>% select(FinalObjectiveValue, everything())
+# 
+# best_tuned_model4 <- tuning_results_df4 %>%
+#                     arrange(FinalObjectiveValue) %>% 
+#                     head(n=1) %>% pull(TrainingJobName)
+# 
+# #best_tuned_model
+# training_job_stats4 <- session$describe_training_job(job_name = best_tuned_model4)
+# 
+# final_metrics_4 <-  map_df(training_job_stats4$FinalMetricDataList, 
+#                            ~tibble(metric_name = .x[["MetricName"]],
+#                                    value       = .x[["Value"]]))
 ```
 
 ```{r index-59, include=FALSE}
-final_metrics_4
+#final_metrics_4
 ```
 
 ```{r index-60, include=FALSE}
-predictions_path_4 <- paste0(models_path, "/", "austin-xgb-2021-08-24-16-05-39-168-ba9e4034", "/predictions")
-
-session$create_model_from_job("austin-xgb-2021-08-24-16-05-39-168-ba9e4034")
-
-xgb_batch_predictor_4 <- sagemaker$transformer$Transformer(model_name     = "austin-xgb-2021-08-24-16-05-39-168-ba9e4034",
-                                                           instance_count = 1L, 
-                                                           instance_type  = "ml.m5.4xlarge", 
-                                                           strategy       = "MultiRecord",  
-                                                           assemble_with  = "Line",
-                                                           output_path    = predictions_path_4)
+# predictions_path_4 <- paste0(models_path, "/", "austin-xgb-2021-08-24-16-05-39-168-ba9e4034", "/predictions")
+# 
+# session$create_model_from_job("austin-xgb-2021-08-24-16-05-39-168-ba9e4034")
+# 
+# xgb_batch_predictor_4 <- sagemaker$transformer$Transformer(model_name     = "austin-xgb-2021-08-24-16-05-39-168-ba9e4034",
+#                                                            instance_count = 1L, 
+#                                                            instance_type  = "ml.m5.4xlarge", 
+#                                                            strategy       = "MultiRecord",  
+#                                                            assemble_with  = "Line",
+#                                                            output_path    = predictions_path_4)
 
 ```
 
@@ -1178,40 +1178,40 @@ xgb_batch_predictor_4 <- sagemaker$transformer$Transformer(model_name     = "aus
 ```
 
 ```{r index-62, include=FALSE}
-test_results_4 <- test_results_4 %>%
-    mutate(pred_class = pmap_chr(across(`0-250000`:`650000+`),
-                        ~ names(c(...)[which.max(c(...))])))
+# test_results_4 <- test_results_4 %>%
+#     mutate(pred_class = pmap_chr(across(`0-250000`:`650000+`),
+#                         ~ names(c(...)[which.max(c(...))])))
 ```
 
 ```{r index-63, include=FALSE, fig.height=12, fig.width=14}
-conf4 <- test_results_4 %>% 
-  conf_mat(Truth, pred_class) %>% 
-  autoplot(type = "heatmap") +
-  scale_fill_scico(begin = 0.2, end = 0.7, palette = "bamako") +  
-  labs(title = "Confusion Matrix - XGBoost multi-class AFTER 3rd Tuning\n") +
-  scale_x_discrete(position = "top")
-# compare to other models
-
-(conf1 + conf2) / (conf3 + conf4)
+# conf4 <- test_results_4 %>% 
+#   conf_mat(Truth, pred_class) %>% 
+#   autoplot(type = "heatmap") +
+#   scale_fill_scico(begin = 0.2, end = 0.7, palette = "bamako") +  
+#   labs(title = "Confusion Matrix - XGBoost multi-class AFTER 3rd Tuning\n") +
+#   scale_x_discrete(position = "top")
+# # compare to other models
+# 
+#(conf1 + conf2) / (conf3 + conf4)
 ```
 
 ```{r index-64, include=FALSE, fig.height=10, fig.width=10}
-auc4 <- test_results_4 %>% 
-  roc_auc(as.factor(Truth), `0-250000`:`650000+`)
-
-roc4 <- test_results_4 %>% 
-  roc_curve(as.factor(Truth), `0-250000`:`650000+`) %>% 
-  ggplot(aes(1-specificity, sensitivity, color = .level)) +
-  geom_abline(lty = 2, color = "gray80", size = 1.5) +
-  geom_path(alpha = 0.7, size = 1.1) +
-  coord_equal() +
-  labs(color = "priceRange",
-       title = "ROC: XGBoost multi-class 3nd Tune",
-       subtitle = paste("AUC =", auc4$.estimate )) +
-  theme(legend.position = c(0.8, 0.3),
-        legend.background = element_rect(fill = "black"))
-
-(roc1 + roc2) / ( roc3 + roc4)
+# auc4 <- test_results_4 %>% 
+#   roc_auc(as.factor(Truth), `0-250000`:`650000+`)
+# 
+# roc4 <- test_results_4 %>% 
+#   roc_curve(as.factor(Truth), `0-250000`:`650000+`) %>% 
+#   ggplot(aes(1-specificity, sensitivity, color = .level)) +
+#   geom_abline(lty = 2, color = "gray80", size = 1.5) +
+#   geom_path(alpha = 0.7, size = 1.1) +
+#   coord_equal() +
+#   labs(color = "priceRange",
+#        title = "ROC: XGBoost multi-class 3nd Tune",
+#        subtitle = paste("AUC =", auc4$.estimate )) +
+#   theme(legend.position = c(0.8, 0.3),
+#         legend.background = element_rect(fill = "black"))
+# 
+# (roc1 + roc2) / ( roc3 + roc4)
 ```
 
 ## Batch Inference on Holdout Data
@@ -1352,7 +1352,7 @@ I had to adjust the `{SHAPforxgboost}` R package slightly to work for multi-clas
 XGBoost predictions. First, rebuild the model using the `{xgboost}` R package and the
 model hyperparameters.
 
-```{r index-75.1, include=FALSE}
+```{r index-75.1, eval=FALSE}
 library(SHAPforxgboost)
 library(xgboost)
 
