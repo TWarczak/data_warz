@@ -1,5 +1,5 @@
 ---
-title: "Predicting House Prices using Multi-class XGBoost, with Geospacial Plots and SHAP to Explain Model Behavior."
+title: "Using SageMaker + RStudio to Predict Home Prices with Multi-class XGBoost and Explaining Model Behavior with Geospacial Plots and SHAP."
 author: Todd Warczak
 date: '2021-08-19'
 slug: XGB-Multi-Class
@@ -26,7 +26,7 @@ tags:
   - ggmaps
   - Leaflet
   - Geospacial
-subtitle: 'Interpretable Multi-class XGBoost with Geospacial Plots and SHapley Additive exPlanations (SHAP)'
+subtitle: 'Interpretable Multi-class XGBoost with SHapley Additive exPlanations (SHAP)'
 summary: "In this post I explore an Austin Housing dataset and predict binned housing price. EDA includes static and interactive geospacial feature maps and feature engineering using natural language processing (NLP). After training/tuning multi-class XGBoost models , I run batch inference to predict the price of Austin, TX houses. I then submit predictions to the Kaggle competition which scrored 0.8876 (mlogloss), which would have placed 6th in the live competition. After submission, I generate SHapley Additive exPlanations (SHAP) plots to understand how XGBoost made predictions."
 featured: "featured-austin.png"
 image:
