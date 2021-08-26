@@ -291,8 +291,8 @@ These are the words we want to detect and use as a feature for our xgboost model
       slice_max(-estimate, n = 12) %>%
       pull(word)
 
-We can look at these changes with price directly. For example, these are
-the words most associated with price decrease.
+Let's plot how often the most significant words show up in the different `priceRange` bins. These are
+the words that most associate with price decrease and increase.
 
     high <- word_freqs %>% 
       filter(word %in% higher_words) %>%

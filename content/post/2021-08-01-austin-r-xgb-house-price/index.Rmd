@@ -259,8 +259,8 @@ lower_words <-
   pull(word)
 ```
 
-We can look at these changes with price directly. For example, these are the words
-most associated with price decrease.
+Let's plot how often the most significant words show up in the different `priceRange` bins. These are
+the words that most associate with price decrease and increase.
 
 ```{r index-10, fig.width=12, fig.height=14}
 high <- word_freqs %>% 
