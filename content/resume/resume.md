@@ -63,7 +63,7 @@ twarczak@gmail.com\
 #### Sep 2012 - August 2020
 
 ### BS Biology &mdash; University of Utah
-#### Sep 2007 - May 2012
+#### Sep 2008 - May 2012
 
 ## Work Experience {.divider}
 
