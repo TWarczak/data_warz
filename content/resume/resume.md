@@ -79,11 +79,11 @@ twarczak@gmail.com\
 
 ### SageMaker + RStudio to Predict Home Prices w/ Multi-class XGBoost; Explaining Model Behavior with Geospacial Plots and SHAP
 
-Explored Austin dataset to predict home price in Kaggle competition. ([Blog](https://toddwarczak.netlify.app/post/xgb-multi-class/), [Github](https://github.com/TWarczak/data_warz/blob/master/content/post/2021-08-01-austin-r-xgb-house-price/README.md))
-Built static and interactive geospacial plots overlayed with feature data.
+* Explored Austin dataset to predict home price in Kaggle competition. ([Blog](https://toddwarczak.netlify.app/post/xgb-multi-class/), [Github](https://github.com/TWarczak/data_warz/blob/master/content/post/2021-08-01-austin-r-xgb-house-price/README.md))
+* Built static and interactive geospacial plots overlayed with feature data.
 Feature engineered high/low important words that associate w/ price using NLP.
 Trained/tuned/evaluated/deployed SageMaker Multi-class XGBoost on holdout data & submitted predicted binned price to Kaggle competition. Submission scored 0.8876 (mLogLoss), which would have placed 6th (out of 90 entries) in live competition.
-Modified {SHAPforxgboost} package to generate multi-class SHapley Additive exPlanations (SHAP) values/plots that explain how XGBoost model made predictions. 
+* Modified {SHAPforxgboost} package to generate multi-class SHapley Additive exPlanations (SHAP) values/plots that explain how XGBoost model made predictions. 
 
 ### Predicting Churn using AWS SageMaker & Local RStudio
 * Utilized SageMaker and built-in XGBoost algorithm to train, tune, evaluate, and deploy model for predicting bank customer churn in the SLICED season 1 episode 7 Kaggle competition. ([Blog](https://toddwarczak.netlify.app/post/sagemaker/), [Github](https://github.com/TWarczak/data_warz/tree/master/content/post/2021-08-01-sagemaker-r-xgb-churn))
