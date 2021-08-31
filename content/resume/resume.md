@@ -98,6 +98,7 @@ Trained/tuned/evaluated/deployed SageMaker Multi-class XGBoost on holdout data &
 * Weekly twitter project focusing on cleaning, wrangling, summarizing, and arranging a new dataset in R to produce a single chart. Typically using {ggplot2} and {tidyverse} tools. Shared via #TidyTuesday. [github-TidyTuesday](https://github.com/TWarczak/TidyTuesday)
 * Mario Kart 64 World Records - Visualization of cumulative days individual records are held by players.
 * Survivor - Visualization showing Myers-Briggs Type Indicator personalities of all show contestants vs. the winners.
+* Great Lakes Commercial Fishing - Rolling averages of fish family yearly catch.
 
 ## Data Science Skills {.divider}
   * R ★★★★
