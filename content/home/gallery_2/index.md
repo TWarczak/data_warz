@@ -4,7 +4,7 @@
 widget: blank
 
 # This file represents a page section.
-headless: true
+headless: false
 
 # Order that this section appears on the page.
 weight: 50
@@ -15,7 +15,7 @@ subtitle: Captions & Thesis Download at [Github](https://github.com/TWarczak/the
 gallery_item:
 - album: gallery_2
   image: figure1.1.png
-  caption: Figure 1.1 Generalized Diagram of Arsenic Transport and Metabolism in Plants - Modified from Punshon et al. (2017), Zhao et al. (2009), and Ma et al. (2007).
+  caption:
 - album: gallery_2
   image: figure2.1A_B_C.png
   caption:
@@ -72,4 +72,4 @@ gallery_item:
   caption:
 ---
 
-{{< gallery >}}
+{{< gallery >}} 
