@@ -20,9 +20,6 @@ gallery_item:
   image: figure2.1A_B_C.png
   caption:
 - album: gallery_2
-  image: figure2.1D.png
-  caption: 
-- album: gallery_2
   image: figure2.2.png
   caption:
 - album: gallery_2
@@ -38,7 +35,7 @@ gallery_item:
   image: figure3.2A.png
   caption:
 - album: gallery_2
-  image: figure3.2B_C.png
+  image: figure3.2B.png
   caption: 
 - album: gallery_2
   image: figure3.3A_B.png
