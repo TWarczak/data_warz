@@ -10,7 +10,7 @@ headless: true
 weight: 50
 
 title: Select Thesis Figures
-subtitle: Download Thesis at [Github](https://github.com/TWarczak/thesis)
+subtitle: Captions & Thesis Download at [Github](https://github.com/TWarczak/thesis)
 
 gallery_item:
 - album: gallery_2
