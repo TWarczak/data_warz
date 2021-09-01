@@ -15,7 +15,7 @@ subtitle: Download Thesis at [Github](https://github.com/TWarczak/thesis)
 gallery_item:
 - album: gallery_2
   image: figure1.1.png
-  caption:
+  caption: Figure 1.1 Generalized Diagram of Arsenic Transport and Metabolism in Plants - Modified from Punshon et al. (2017), Zhao et al. (2009), and Ma et al. (2007).
 - album: gallery_2
   image: figure2.1A_B_C.png
   caption:
