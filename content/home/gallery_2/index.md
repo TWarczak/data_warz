@@ -68,7 +68,7 @@ gallery_item:
   image: sup_figure3.4.png
   caption:
 - album: gallery_2
-  image: drake_meme.png
+  image: drake_meme.tif
   caption:
 ---
 
