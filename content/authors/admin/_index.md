@@ -83,4 +83,4 @@ My name is Todd Warczak, pronounced WAR-ZAK, and I recently completed my PhD in 
 
 I currently live in White River Junction, VT. Looking to relocate to Seattle, WA to be closer to friends and family. You can find me on Twitter and GitHub. This blog was built in RStudio using {blogdown} and Hugo-academic; deployed on Netlify. 
 
-{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume_twarczak_08_26.pdf" "newtab" >}}resumé{{< /staticref >}}.
+{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume_twarczak_sept.pdf" "newtab" >}}resumé{{< /staticref >}}.
