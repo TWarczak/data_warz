@@ -23,7 +23,7 @@ date_format: Jan 2006
 #   Leave other parameters empty if not required.
 #   Begin multi-line descriptions with YAML's `|2-` multi-line prefix.
 item:
-- certificate_url: https://university.business-science.io/courses/1032915/certificate
+- certificate_url: uploads/certificate-of-completion-for-ds4b-203-r-high-performance-time-series-forecasting.pdf
   date_end: "2021-05-14"
   date_start: "2021-04-29"
   description: ""
