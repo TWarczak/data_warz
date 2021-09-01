@@ -4,7 +4,7 @@
 widget: blank
 
 # This file represents a page section.
-headless: false
+headless: true
 
 # Order that this section appears on the page.
 weight: 50
@@ -66,9 +66,6 @@ gallery_item:
   caption:
 - album: gallery_2
   image: sup_figure3.4.png
-  caption:
-- album: gallery_2
-  image: drake_meme.tif
   caption:
 ---
 
