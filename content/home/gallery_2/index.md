@@ -64,6 +64,9 @@ gallery_item:
 - album: gallery_2
   image: sup_figure3.4.png
   caption:
+  
+design:
+  columns: '6'
 ---
 
 {{< gallery >}} 
