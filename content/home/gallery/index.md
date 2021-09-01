@@ -22,6 +22,9 @@ gallery_item:
 - album: gallery
   image: fish2.gif
   caption: Great Lakes commercial fishing by rolling average of fish family yearly catch. [Github](https://github.com/TWarczak/TidyTuesday/tree/main/plots/2021_24_fish)
+  
+design:
+  columns: '4'  
 ---
 
 {{< gallery >}}
