@@ -582,8 +582,8 @@ body.dark {
     background: none;
     font-size: 0.75em;
     word-wrap: break-word; }
-    a > code {
-      color: inherit; }
+    //a > code {
+    //  color: inherit; }
 
   pre {
     border: 1px solid #8a817c; // code block border
@@ -591,9 +591,9 @@ body.dark {
     padding: 0.5em;
     background: #474448;     // code block backround
     overflow-x: hidden;
-    border-radius: 5px;      // corner rounding
-    word-wrap:  normal;
-    word-break: normal;
+    //border-radius: 5px;      // corner rounding
+    word-wrap:  break-all;
+    word-break: break-all;
     white-space: pre-wrap;
   }
   pre code {

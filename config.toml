@@ -18,7 +18,6 @@ theme = "hugo-academic"
 pygmentsCodeFences = true
 pygmentsUseClasses = true
 
-
 [imaging]
 anchor = "smart"
 quality = 90
@@ -32,17 +31,20 @@ defaultMarkdownHandler = "goldmark"
       hardWraps = false
       xhtml = false
   [markup.highlight]
-    anchorLineNos = false
-    codeFences = false
-    guessSyntax = false
+    codeFences = true
+    guessSyntax = true
     hl_Lines = ""
-    lineAnchors = ""
     lineNoStart = 1
-    lineNos = false
-    lineNumbersInTable = false
-    noClasses = true
-    style = "monokai"  # set this in params.toml
+    lineNos = true
+    lineNumbersInTable = true
+    noClasses = false
     tabWidth = 3
+    #anchorLineNos = true
+    #lineAnchors = ""
+    #style = "tango"  # set this in params.toml
+
+
+
 
 
   [markup.tableOfContents]

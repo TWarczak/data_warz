@@ -53,30 +53,28 @@ library(reticulate)    # calling the SageMaker Python SDK from R
 theme_set(ggdark::dark_theme_minimal())
 ```
 
-In this post I explore an Austin, TX real estate dataset and predict
-binned housing price. EDA includes static and interactive geospacial maps and natural language processing
-(NLP) feature engineering. 
+In this post I explore an Austin, TX real estate dataset and predict binned housing
+price. EDA includes static and interactive geospacial maps and natural language
+processing (NLP) feature engineering.
 
-In my RStudio I utilize a conda environment to access SageMaker’s
-XGBoost, S3, and EC2 for distributed computing. 
+In my RStudio I utilize a conda environment to access SageMaker's XGBoost, S3, and
+EC2 for distributed computing.
 
-After model training/tuning/evaluation I ran batch inference with the best
-performing model to predict the price of Austin homes in holdout data
-and then submitted predictions to the
-[Kaggle](https://www.kaggle.com/c/sliced-s01e11-semifinals/)
-competition. Multiclass Log Loss was the evaluation algorithm and my
-submission scored 0.8876 (mlogloss), which would have placed 6th (out of 90 entries)
-in the live competition.
+After model training/tuning/evaluation I ran batch inference with the best performing
+model to predict the price of Austin homes in holdout data and then submitted
+predictions to the [Kaggle](https://www.kaggle.com/c/sliced-s01e11-semifinals/)
+competition. Multiclass Log Loss was the evaluation algorithm and my submission
+scored 0.8876 (mlogloss), which would have placed 6th (out of 90 entries) in the live
+competition.
 
-Finally I build SHapley Additive exPlanations (SHAP) plots to
-understand what the XGBoost model considered important features and how
-it clustered similar observations.
+Finally I build SHapley Additive exPlanations (SHAP) plots to understand what the
+XGBoost model considered important features and how it clustered similar
+observations.
 
 ## Data
 
-
-The goal is to predict the binned `priceRange` of Austin, TX homes. The data can be found at [Kaggle](https://www.kaggle.com/c/sliced-s01e11-semifinals/). Let's dive in. 
-
+The goal is to predict the binned `priceRange` of Austin, TX homes. The data can be
+found at [Kaggle](https://www.kaggle.com/c/sliced-s01e11-semifinals/). Let's dive in.
 
 ```{r index-1}
 train_raw <- read_csv("~/Documents/R/data_warz/content/post/2021-08-01-austin-r-xgb-house-price/train.csv")
@@ -92,12 +90,16 @@ airports, etc? Downtown vs. suburbs?
 
 ## EDA
 
-We can use the `{leaflet}` package to build interactive maps overlayed with our data. Unfortunately, these plots do not render in markdown files, so I've provided screenshots. Zooming into different neighborhoods can quickly help you understand the real estate scene in Austin.
+We can use the `{leaflet}` package to build interactive maps overlayed with our data.
+Unfortunately, these plots do not render in markdown files, so I've provided
+screenshots. Zooming into different neighborhoods can quickly help you understand the
+real estate scene in Austin.
 
 ```{r index-2}
 q <- train_raw %>%
      mutate(priceRange_bin = parse_number(priceRange))
 ```
+
 ```{r index-2.2, eval=FALSE, fig.height=10, fig.width=10}
 #table(q$priceRange)
 #scico::scico_palette_show(palettes = scico_palette_names())
@@ -122,9 +124,7 @@ m <- leaflet(q) %>%
 m
 ```
 
-![](austin_zoom2.png)
-![](austin_zoom1.png)
-
+![](austin_zoom2.png) ![](austin_zoom1.png)
 
 I want to see multiple features distributed on a similar map. Let's build hex plots
 for the numeric predictors and use `{patchwork}` to make one nice plot.
@@ -243,7 +243,8 @@ word_mods <-
 word_mods
 ```
 
-These are the words we want to detect and use as a feature for our xgboost model, rather than using all the text tokens as features individually.
+These are the words we want to detect and use as a feature for our xgboost model,
+rather than using all the text tokens as features individually.
 
 ```{r index-9}
 higher_words <-
@@ -259,8 +260,8 @@ lower_words <-
   pull(word)
 ```
 
-Let's plot how often the most significant words show up in the different `priceRange` bins. These are
-the words that most associate with price decrease and increase.
+Let's plot how often the most significant words show up in the different `priceRange`
+bins. These are the words that most associate with price decrease and increase.
 
 ```{r index-10, fig.width=12, fig.height=14}
 high <- word_freqs %>% 
@@ -506,7 +507,8 @@ xgb_estimator$set_hyperparameters(objective        = "multi:softprob",
                                   gamma            = 0.01)
 ```
 
-Give SageMaker models you build a unique identifier. Tell XGBoost where your data is in S3.
+Give SageMaker models you build a unique identifier. Tell XGBoost where your data is
+in S3.
 
 ```{r chunk22, eval=FALSE}
 algo          <- "xgb"    # keep short
