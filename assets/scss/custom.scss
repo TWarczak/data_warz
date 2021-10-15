@@ -589,7 +589,7 @@ body.dark {
     border: 1px solid #8a817c; // code block border
     box-shadow: 1px 1px 1px $spc-bkg-dark; // code block shadow (values: h-shift v-shift intensity)
     padding: 0.5em;
-    background: #474448;     // code block backround
+    background: #202020;     // code block backround
     overflow-x: hidden;
     //border-radius: 5px;      // corner rounding
     word-wrap:  break-all;
@@ -597,13 +597,14 @@ body.dark {
     white-space: pre-wrap;
   }
   pre code {
+    font-family: 'courier';
     background: none;
     font-size: 0.65rem; // code size inside the code chunks
     color: #dddddd;  // specify color of code inside chunk.  Overwrites code {color:}
     white-space: pre-wrap;
   }
   .hljs {
-  	background-color: #474448; //#242423; //$spc-02dp;     // code block text background
+  	background-color: #202020; //#474448; //#242423; //$spc-02dp;     // code block text background
   }
 }
 figure img {

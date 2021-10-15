@@ -58,7 +58,7 @@ description = ""
 
 highlight = true
 highlight_languages = ["r"]  # Add support for highlighting additional languages
-highlight_style = "atom-one-dark-reasonable"
+highlight_style = "rainbow"
 
 #"paraiso-dark" "monokailight" "rainbow"  "atom-one-dark-reasonable"
 #highlight_version = "10.0.2"

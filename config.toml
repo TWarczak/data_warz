@@ -1,3 +1,5 @@
+# render("practice.Rmd", md_document(variant = "markdown_github", preserve_yaml = TRUE))
+
 baseurl = "https://toddwarczak.netlify.app/"
 copyright = ""
 defaultContentLanguage = "en"
@@ -5,7 +7,7 @@ defaultContentLanguageInSubdir = false
 disableAliases = true
 enableEmoji = true
 enableGitInfo = false
-enableRobotsTXT = true
+enableRobotsTXT = false
 footnotereturnlinkcontents = "<sup>^</sup>"
 hasCJKLanguage = false
 ignoreFiles = ["\\.ipynb$", ".ipynb_checkpoints$", "\\.Rmd$", "\\.Rmarkdown$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$"]
@@ -15,8 +17,9 @@ summaryLength = 30
 timeout = 600000
 title = "data warz"
 theme = "hugo-academic"
-pygmentsCodeFences = true
-pygmentsUseClasses = true
+pygmentsCodeFences = false
+pygmentsUseClasses = false
+
 
 [imaging]
 anchor = "smart"
@@ -31,25 +34,21 @@ defaultMarkdownHandler = "goldmark"
       hardWraps = false
       xhtml = false
   [markup.highlight]
-    codeFences = true
-    guessSyntax = true
-    hl_Lines = ""
-    lineNoStart = 1
+    codeFences = false
+    guessSyntax = false
+    hl_Lines = 3
+    lineNoStart = 2
     lineNos = true
-    lineNumbersInTable = true
+    lineNumbersInTable = false
     noClasses = false
     tabWidth = 3
     #anchorLineNos = true
     #lineAnchors = ""
     #style = "tango"  # set this in params.toml
 
-
-
-
-
   [markup.tableOfContents]
-    endLevel = 3
-    startLevel = 2
+    endLevel = 2
+    startLevel = 1
 
 
 [module]
