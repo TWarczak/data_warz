@@ -85,12 +85,8 @@ I completed my PhD in 2020 from Dartmouth College, genetically engineering safer
 
 I moved to California in 2022 to work for Bio-Rad Laboratories as a Data Scientist II, building Shiny apps for a team of scientists to interact with their data in the cloud, developing ddPCR and NGS analysis pipelines in R, overseeing Bio-Rad software development for a Non-Invasive Prenatal Test (NIPT) kit our QX600 machine. 
 
-Sadly, In January 2023 our NIPT project did not pass feasibility stage. In March 2023 Bio-Rad performed a large round of layoffs and my position, along with others on the NIPT team, were terminated.
-
-But I’m excited to start new projects with a new team!
+Sadly, In January 2023 our NIPT project did not pass feasibility stage. In March 2023 Bio-Rad performed a large round of layoffs and my position, along with others on the NIPT team, were terminated. But I’m excited to start new projects with a new team!
 
 I currently live in Pleasanton, CA. Looking for opportunities in the Bay Area or Seattle. 
 
-This blog was built in RStudio using {blogdown} and Hugo-academic; deployed on Netlify. 
-
-{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume_twarczak_sept.pdf" "newtab" >}}resumé{{< /staticref >}}.
+{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume_twarczak.pdf" "newtab" >}}resumé{{< /staticref >}}.
