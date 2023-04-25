@@ -16,7 +16,7 @@ organizations:
   url:
 
 # Short bio (displayed in user profile at end of posts)
-bio: Doubling down with R for a career in data science. Relocating to Seattle, New York, or other major US city.
+bio: Doubling down with R for a career in data science.
 
 # Interests to show in About widget
 interests:
@@ -79,8 +79,18 @@ highlight_name: false
 
 ---
 
-My name is Todd Warczak, pronounced WAR-ZAK, and I recently completed my PhD in 2020 genetically engineering safer-to-eat crops that accumulate less arsenic from the soil. The most fullfilling streches of my thesis work involved implementing new statistical tools in R to analyze and visualize my plant genomics data. Now I am eager to move into data science full-time where I can grow my abilities within the amazing R community. 
+My name is Todd Warczak, pronounced WAR-ZAK. I’m a mid-level Data Scientist and experienced R developer. If you need help with data analysis, engaging clients with dashboards or interactive apps, building predictive models, automating data driven reports, or just creating impressive data visualizations - I’m your guy!
 
-I currently live in White River Junction, VT. Looking to relocate to a major U.S. metro area. You can find me on Twitter and GitHub. This blog was built in RStudio using {blogdown} and Hugo-academic; deployed on Netlify. 
+I completed my PhD in 2020 from Dartmouth College, genetically engineering safer-to-eat crops that accumulate less arsenic from the soil. The most fulfilling part of my thesis work was building custom analysis tools and visualizations for my plant genomics data.
+
+I moved to California in 2022 to work for Bio-Rad Laboratories as a Data Scientist II, building Shiny apps for a team of scientists to interact with their data in the cloud, developing ddPCR and NGS analysis pipelines in R, overseeing Bio-Rad software development for a Non-Invasive Prenatal Test (NIPT) kit our QX600 machine. 
+
+Sadly, In January 2023 our NIPT project did not pass feasibility stage. In March 2023 Bio-Rad performed a large round of layoffs and my position, along with others on the NIPT team, were terminated.
+
+But I’m excited to start new projects with a new team!
+
+I currently live in Pleasanton, CA. Looking for opportunities in the Bay Area or Seattle. 
+
+This blog was built in RStudio using {blogdown} and Hugo-academic; deployed on Netlify. 
 
 {{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume_twarczak_sept.pdf" "newtab" >}}resumé{{< /staticref >}}.
