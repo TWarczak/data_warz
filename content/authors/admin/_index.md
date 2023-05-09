@@ -89,4 +89,4 @@ Sadly, In January 2023 our NIPT project did not pass feasibility stage. In March
 
 I currently live in Pleasanton, CA. Looking for opportunities in the Bay Area or Seattle. 
 
-{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume_twarczak.pdf" "newtab" >}}resumé{{< /staticref >}}.
+{{< icon name="download" pack="fas" >}} Download my {{< staticref "uploads/resume_twarczak_biotech.pdf" "newtab" >}}resumé{{< /staticref >}}.
